@@ -45,14 +45,14 @@ def plot_picture(df, namex, namey, namelable, unit, namepng, num1, num2, data_di
     plt.plot(x_fit, y_fit, color='red', linestyle='--', label='线性')
 
     # 最高和最低温度点（基于有效数据）
-    max_temp_idx = np.argmax(valid_gstperatures.values)
-    min_temp_idx = np.argmin(valid_gstperatures.values)
-    max_year = valid_years.iloc[max_temp_idx]
-    max_temp = valid_gstperatures.iloc[max_temp_idx]
-    min_year = valid_years.iloc[min_temp_idx]
-    min_temp = valid_gstperatures.iloc[min_temp_idx]
-    plt.scatter(max_year, max_temp, color='red', s=25, alpha=1, zorder=5, edgecolors='none')
-    plt.scatter(min_year, min_temp, color='red', s=25, alpha=1, zorder=5, edgecolors='none')
+    # max_temp_idx = np.argmax(valid_gstperatures.values)
+    # min_temp_idx = np.argmin(valid_gstperatures.values)
+    # max_year = valid_years.iloc[max_temp_idx]
+    # max_temp = valid_gstperatures.iloc[max_temp_idx]
+    # min_year = valid_years.iloc[min_temp_idx]
+    # min_temp = valid_gstperatures.iloc[min_temp_idx]
+    # plt.scatter(max_year, max_temp, color='red', s=25, alpha=1, zorder=5, edgecolors='none')
+    # plt.scatter(min_year, min_temp, color='red', s=25, alpha=1, zorder=5, edgecolors='none')
 
     # 设置坐标轴刻度朝内，取消网格
     plt.tick_params(axis='both', direction='in')
@@ -70,9 +70,9 @@ def plot_picture(df, namex, namey, namelable, unit, namepng, num1, num2, data_di
     # plt.legend()
 
     # 创建文本标注
-    texts = []
-    texts.append(plt.text(max_year, max_temp, f'最高，{max_year}年，{max_temp}{unit}', color='red', ha='center', va='bottom'))
-    texts.append(plt.text(min_year, min_temp - num2 / 4, f'最低，{min_year}年，{min_temp}{unit}', color='red', ha='center', va='top'))
+    # texts = []
+    # texts.append(plt.text(max_year, max_temp, f'最高，{max_year}年，{max_temp}{unit}', color='red', ha='center', va='bottom'))
+    # texts.append(plt.text(min_year, min_temp - num2 / 4, f'最低，{min_year}年，{min_temp}{unit}', color='red', ha='center', va='top'))
 
     if intercept >= 0:
         texts.append(plt.text(valid_years.iloc[-2], valid_gstperatures.min() - num1 / 2, f'y={slope:.2f}x+{intercept:.2f}\nR$^2$={R2:.3f}', fontsize=7))
