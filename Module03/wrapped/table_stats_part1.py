@@ -110,7 +110,7 @@ def table_stats_part1(data_df, element_name):
         elif element_name == 'TEM_Min':
             data_df[element_name]=(data_df[element_name]<0).astype(int)
         elif element_name == 'PRE_Time_2020':
-            data_df[element_name]=(data_df[element_name]>25).astype(int)
+            data_df[element_name]=(data_df[element_name]>= 24.1).astype(int)
         
         station_name = data_df['Station_Name'].unique().tolist()
         table1 = data_df.groupby('Station_Name').apply(table1_stats).T
