@@ -133,7 +133,7 @@ def tem_report(basic_tem_yearly,basic_tem_accum,post_yearly_df,data_dir):
         dic['max_tem_slope']='上升'
     else:
         dic['max_tem_slope']='下降'
-    max_tem_picture_hournum=plot_picture(basic_tem_yearly, '年份','最高气温(°C)','气温(℃)','℃','历年平均最高气温变化.png',2,2,data_dir)
+    max_tem_picture_hournum=plot_picture(basic_tem_yearly, '年份','极端最高气温(°C)','气温(℃)','℃','历年平均最高气温变化.png',2,2,data_dir)
     
     # 平均最低气温
     mask = ~np.isnan(basic_tem_yearly['最低气温(°C)'])
@@ -144,7 +144,7 @@ def tem_report(basic_tem_yearly,basic_tem_accum,post_yearly_df,data_dir):
         dic['min_tem_slope']='上升'
     else:
         dic['min_tem_slope']='下降'
-    min_tem_picture_hournum=plot_picture(basic_tem_yearly, '年份','最低气温(°C)','气温(℃)','℃','历年最低平均气温变化.png',2,2,data_dir)
+    min_tem_picture_hournum=plot_picture(basic_tem_yearly, '年份','极端最低气温(°C)','气温(℃)','℃','历年最低平均气温变化.png',2,2,data_dir)
 
     dic['average_picture'] = InlineImage(doc, average_tem_picture_hournum, width=Mm(130))
     dic['max_picture'] = InlineImage(doc, max_tem_picture_hournum, width=Mm(130))
@@ -172,10 +172,10 @@ def tem_report(basic_tem_yearly,basic_tem_accum,post_yearly_df,data_dir):
     average_tem_picture_month=plot_picture_2(months,basic_tem_accum.iloc[0, 1:-1],dic,'平均气温（℃）','average_tem_m1','average_tem_m2','平均气温逐月变化.png',2,2,data_dir)
 
     # 平均最高气温
-    max_tem_picture_month=plot_picture_2(months,basic_tem_accum.iloc[1, 1:-1],dic,'平均最高气温（℃）','max_tem_m1','max_tem_m2','最高气温逐月变化.png',2,2,data_dir)
+    max_tem_picture_month=plot_picture_2(months,basic_tem_accum.iloc[1, 1:-1],dic,'极端最高气温（℃）','max_tem_m1','max_tem_m2','最高气温逐月变化.png',2,2,data_dir)
 
     # 平均最低气温
-    min_tem_picture_month=plot_picture_2(months,basic_tem_accum.iloc[2, 1:-1],dic,'平均最低气温（℃）','min_tem_m1','min_tem_m2','最低气温逐月变化.png',2,2,data_dir)
+    min_tem_picture_month=plot_picture_2(months,basic_tem_accum.iloc[2, 1:-1],dic,'极端最低气温（℃）','min_tem_m1','min_tem_m2','最低气温逐月变化.png',2,2,data_dir)
 
     dic['average_picture_m'] = InlineImage(doc, average_tem_picture_month, width=Mm(130))
     dic['max_picture_m'] = InlineImage(doc, max_tem_picture_month, width=Mm(130))
