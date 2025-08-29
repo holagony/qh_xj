@@ -16,6 +16,7 @@ from Utils.get_local_data import get_local_data
 from Module00.wrapped.check import check
 from Module04.wrapped.return_period_snow import calc_return_period_snow
 from Report.code.Module04.re_snow import re_snow_report,re_snow_report_pg
+from Utils.get_url_path import save_cmadaas_data
 
 
 def callback(url, result_id, result):
@@ -129,6 +130,10 @@ class workerReturnSnow:
                 checker = check(monthly_df, 'MS', monthly_elements.split(','), [main_station], years_split[0], years_split[1])
                 snow_result.check_result['使用的天擎月要素'] = checker.run()
                 
+            # 6.结果保存
+            if cfg.INFO.SAVE_RESULT:
+                snow_result['csv'] = save_cmadaas_data(data_dir, month_data=monthly_df)
+
         except Exception as e:
             logging.exception(e)
             raise Exception('现有获取的数据不能满足重现期计算条件，无法得到计算结果')

@@ -6,6 +6,47 @@ from Utils.config import cfg
 from Utils.ordered_easydict import OrderedEasyDict as edict
 
 
+def save_cmadaas_data(data_dir, year_data=None, mon_data=None, day_data=None, hour_data=None, radi_data=None):
+    result = dict()
+
+    if year_data is not None:
+        year_path = os.path.join(data_dir, '天擎年数据.csv')
+        year_data.to_csv(year_path, index=True, encoding='utf-8-sig')
+        year_path = year_path.replace(cfg.INFO.IN_DATA_DIR, cfg.INFO.OUT_DATA_DIR)
+        year_path = year_path.replace(cfg.INFO.OUT_DATA_DIR, cfg.INFO.OUT_DATA_URL)
+        result['year'] = year_path
+
+    if mon_data is not None:
+        mon_path = os.path.join(data_dir, '天擎月数据.csv')
+        mon_data.to_csv(mon_path, index=True, encoding='utf-8-sig')
+        mon_path = mon_path.replace(cfg.INFO.IN_DATA_DIR, cfg.INFO.OUT_DATA_DIR)
+        mon_path = mon_path.replace(cfg.INFO.OUT_DATA_DIR, cfg.INFO.OUT_DATA_URL)
+        result['month'] = mon_path
+
+    if day_data is not None:
+        day_path = os.path.join(data_dir, '天擎日数据.csv')
+        day_data.to_csv(day_path, index=True, encoding='utf-8-sig')
+        day_path = day_path.replace(cfg.INFO.IN_DATA_DIR, cfg.INFO.OUT_DATA_DIR)
+        day_path = day_path.replace(cfg.INFO.OUT_DATA_DIR, cfg.INFO.OUT_DATA_URL)
+        result['day'] = day_path
+        
+    if hour_data is not None:
+        hour_path = os.path.join(data_dir, '天擎小时数据.csv')
+        hour_data.to_csv(hour_path, index=True, encoding='utf-8-sig')
+        hour_path = hour_path.replace(cfg.INFO.IN_DATA_DIR, cfg.INFO.OUT_DATA_DIR)
+        hour_path = hour_path.replace(cfg.INFO.OUT_DATA_DIR, cfg.INFO.OUT_DATA_URL)
+        result['hour'] = hour_path
+    
+    if radi_data is not None:
+        radi_path = os.path.join(data_dir, '天擎辐射数据.csv')
+        radi_data.to_csv(radi_path, index=True, encoding='utf-8-sig')
+        radi_path = radi_path.replace(cfg.INFO.IN_DATA_DIR, cfg.INFO.OUT_DATA_DIR)
+        radi_path = radi_path.replace(cfg.INFO.OUT_DATA_DIR, cfg.INFO.OUT_DATA_URL)
+        result['radi'] = radi_path
+
+    return result
+
+
 def get_url_path(base_path, all_result):
     '''
     param base_path 基础路径

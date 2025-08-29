@@ -23,6 +23,7 @@ from Report.code.Module06.climate_disadvantage_report import climate_disadvantag
 from Report.code.Module06.climate_livable_report import climate_livable_report
 from docx import Document
 from docxcompose.composer import Composer
+from Utils.get_url_path import save_cmadaas_data
 
 def calc_climate_assessment(data_json):
     '''
@@ -178,6 +179,10 @@ def calc_climate_assessment(data_json):
         except Exception as e:
             print(f"发生错误：{e}")
             result_dict['report'] =None
+
+        # 7.结果保存
+        if cfg.INFO.SAVE_RESULT:
+            result_dict['csv'] = save_cmadaas_data(data_dir, day_data=daily_df)
 
     except Exception as e:
         logging.exception(e)

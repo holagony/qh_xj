@@ -17,7 +17,7 @@ from Utils.ordered_easydict import OrderedEasyDict as edict
 from Utils.get_local_data import get_local_data
 from Module00.wrapped.check import check
 from collections import OrderedDict
-from Utils.get_url_path import get_url_path
+from Utils.get_url_path import save_cmadaas_data
 from Module09.wrapped.gaussian_puff_model_3D import gaussianPuffModel3D
 from Module09.wrapped.gaussian_plume_model_3D import gaussianPlumeModel3D
 from Report.code.Module09.pollute_report import pollute_report
@@ -198,13 +198,9 @@ def pollute_deal(data_json):
     result_dict.data['通风量'] = ven_ability_accum # 单位: m2/s
     result_dict.data['大气自净能力ASC'] = data_asc_accum # 大气自净能力 1e4 km2/a
     result_dict.data['大气自净能力ASI'] = data_asi_accum # 大气自净能力指数 全天大气对污染物总体清除能力 单位: t/(d*km2)
-
+    
     # 7.结果保存
-    # if cfg.INFO.SAVE_RESULT:
-    #     result_list = []
-    #     result_list.append(OrderedDict(zip(['污染系数', '混合层厚度', '通风量', '大气自净能力指数', 'ASI'], [p_c, depth_mixed_accum, ven_ability_accum, data_asc_accum, data_asi_accum])))
-    #     result_dict.file_url = edict()
-    #     url_dict = get_url_path(data_dir, result_list)
-    #     result_dict.file_url = url_dict
-
+    if cfg.INFO.SAVE_RESULT:
+        result_dict['csv'] = save_cmadaas_data(data_dir, month_data=monthly_df)
+    
     return result_dict

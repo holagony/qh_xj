@@ -19,6 +19,7 @@ from Module05.wrapped.water_supply import calc_water_supply
 from Module05.wrapped.water_circulation import calc_water_circulation
 from Module05.wrapped.freezing_and_thawing import calc_freezing_and_thawing_times, calc_freezing_and_thawing_day
 from Module05.wrapped.rain_runoff import rain_runoff_stats
+from Utils.get_url_path import save_cmadaas_data
 
 from Report.code.Module05.building_energy_efficiency import building_energy_efficiency
 from Report.code.Module05.freezing_and_thawing import freezing_and_thawing_report
@@ -147,6 +148,10 @@ def heating_and_ventilation_handler(data_json):
             checker = check(hourly_df, 'H', hourly_elements.split(','), [sta_ids], years_split[0], years_split[1])
             result_dict.check_result['使用的天擎小时要素'] = checker.run()
 
+        # 6.结果保存
+        if cfg.INFO.SAVE_RESULT:
+            result_dict['csv'] = save_cmadaas_data(data_dir, mon_data=monthly_df, day_data=daily_df, hour_data=hourly_df)
+
     except Exception as e:
         logging.exception(e)
         raise Exception('现有获取的数据不能满足暖通要素计算条件，无法得到计算结果')
@@ -218,6 +223,10 @@ def nuclear_havc_calc_handler(data_json):
         if hourly_df is not None and len(hourly_df) != 0:
             checker = check(hourly_df, 'H', hourly_elements.split(','), [sta_ids], years_split[0], years_split[1])
             result_dict.check_result['使用的天擎小时要素'] = checker.run()
+            
+        # 6.结果保存
+        if cfg.INFO.SAVE_RESULT:
+            result_dict['csv'] = save_cmadaas_data(data_dir, hour_data=hourly_df)
 
     except Exception as e:
         logging.exception(e)
@@ -399,8 +408,11 @@ def freezing_and_thawing_calc_handler(data_json):
             except Exception as e:
                 print(f"发生错误：{e}")
                 result_dict['report'] =None
+        
+        # 6.结果保存
+        if cfg.INFO.SAVE_RESULT:
+            result_dict['csv'] = save_cmadaas_data(data_dir, day_data=daily_df, hour_data=hourly_df)
 
-            
     except Exception as e:
         logging.exception(e)
         raise Exception('现有获取的数据不能满足冻融要素计算条件，无法得到计算结果')
@@ -480,6 +492,10 @@ def rain_runoff_calc_handler(data_json):
         result_dict['img_save_path'] = img_path.replace(cfg.INFO.OUT_DATA_DIR, cfg.INFO.OUT_DATA_URL)
         result_dict['Note'] = ['result1降水事件', 'result2降水事件抽取断点', 'result3年径流总量控制率']
 
+        # 6.结果保存
+        if cfg.INFO.SAVE_RESULT:
+            result_dict['csv'] = save_cmadaas_data(data_dir, day_data=daily_df)
+
     except Exception as e:
         logging.exception(e)
         raise Exception('现有获取的数据不能满足雨水径流要素计算条件，无法得到计算结果')
@@ -541,6 +557,10 @@ def water_supply_calc_handler(data_json):
             result_dict['report'] = report_path.replace(cfg.INFO.OUT_DATA_DIR, cfg.INFO.OUT_DATA_URL)
         except:
             result_dict['report'] = None
+
+        # 6.结果保存
+        if cfg.INFO.SAVE_RESULT:
+            result_dict['csv'] = save_cmadaas_data(data_dir, day_data=daily_df)
 
     except Exception as e:
         logging.exception(e)
@@ -608,6 +628,10 @@ def water_circulation_calc_handler(data_json):
             result_dict['report'] = report_path.replace(cfg.INFO.OUT_DATA_DIR, cfg.INFO.OUT_DATA_URL)
         except:
             result_dict['report'] = None
+        
+        # 6.结果保存
+        if cfg.INFO.SAVE_RESULT:
+            result_dict['csv'] = save_cmadaas_data(data_dir, day_data=daily_df)
 
     except Exception as e:
         logging.exception(e)
@@ -671,6 +695,10 @@ def building_energy_efficiency_calc_handler(data_json):
         if daily_df is not None and len(daily_df) != 0:
             checker = check(daily_df, 'D', daily_elements.split(','), [sta_ids], years_split[0], years_split[1])
             result_dict.check_result['使用的天擎日要素'] = checker.run()
+        
+        # 6.结果保存
+        if cfg.INFO.SAVE_RESULT:
+            result_dict['csv'] = save_cmadaas_data(data_dir, day_data=daily_df)
 
     except Exception as e:
         logging.exception(e)

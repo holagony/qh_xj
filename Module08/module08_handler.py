@@ -14,6 +14,8 @@ from Module00.wrapped.check import check
 from Module08.wrapped.airport_wind import calc_airport_wind_ds, calc_airport_wind_loading
 from Report.code.Module08.airport_wind_ds_report import airport_wind_ds_report
 from Report.code.Module08.airport_wind_loading_report import airport_wind_loading_report
+from Utils.get_url_path import save_cmadaas_data
+
 
 def airport_wind_ds_handler(data_json):
     '''
@@ -77,7 +79,10 @@ def airport_wind_ds_handler(data_json):
             result_dict['report'] = report_path.replace(cfg.INFO.OUT_DATA_DIR, cfg.INFO.OUT_DATA_URL)
         except:
             result_dict['report'] = None
-            
+        
+        # 7.结果保存
+        if cfg.INFO.SAVE_RESULT:
+            result_dict['csv'] = save_cmadaas_data(data_dir, hour_data=hourly_df)
 
     except Exception as e:
         raise Exception('无法得到机场风速区间统计结果，请检查设定的风速区间是否正常/天擎是否有数据')
@@ -147,5 +152,9 @@ def airport_wind_loading_handler(data_json):
         result_dict['report'] = report_path.replace(cfg.INFO.OUT_DATA_DIR, cfg.INFO.OUT_DATA_URL)
     except:
         result_dict['report'] = None
+
+    # 7.结果保存
+    if cfg.INFO.SAVE_RESULT:
+        result_dict['csv'] = save_cmadaas_data(data_dir, hour_data=hourly_df)
             
     return result_dict

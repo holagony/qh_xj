@@ -22,7 +22,7 @@ from Utils.get_url_path import get_url_path
 from Utils.get_local_data import get_local_data
 from Utils.data_loader_with_threads import get_cmadaas_yearly_data, get_cmadaas_monthly_data, get_cmadaas_daily_data
 from Report.code.Module02.wind import win_report
-
+from Utils.get_url_path import save_cmadaas_data
 
 def feature_stats_handler(data_json):
     '''
@@ -303,9 +303,7 @@ def feature_stats_handler(data_json):
 
     # 6.结果保存
     if cfg.INFO.SAVE_RESULT:
-        result_dict.file_url = edict()
-        url_dict = get_url_path(data_dir, result_list)
-        result_dict.file_url = url_dict
+        result_dict['csv'] = save_cmadaas_data(data_dir, mon_data=monthly_df, day_data=daily_df)
 
     return result_dict
 

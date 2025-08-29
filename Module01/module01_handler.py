@@ -13,7 +13,7 @@ from Module01.wrapped.spatial_consistency_analysis import space_analysis
 from Module01.wrapped.correlation_analysis import correlation_analysis
 from Report.code.Module01.correlation_analysis_report import correlation_analysis_report
 from Report.code.Module01.spatial_consistency_report import spatial_consistency_report
-
+from Utils.get_url_path import save_cmadaas_data
 
 # 时间一致性分析 删除小时参数
 def time_consistency_handler(data_json):
@@ -72,7 +72,7 @@ def time_consistency_handler(data_json):
         raise Exception('现有获取的数据不能满足突变检验计算条件，无法得到计算结果')
 
     if cfg.INFO.SAVE_RESULT:
-        pass
+        result_dict['csv'] = save_cmadaas_data(data_dir, day_data=daily_df)
 
     return result_dict
 
@@ -146,7 +146,7 @@ def spatial_consistency_handler(data_json):
         raise Exception('现有获取的数据不能满足一致性检验计算条件，无法得到计算结果')
 
     if cfg.INFO.SAVE_RESULT:
-        pass
+        result_dict['csv'] = save_cmadaas_data(data_dir, day_data=daily_df)
     
     result_dict['uuid'] = uuid4
 
@@ -235,7 +235,7 @@ def calc_correlation_daily_data_handler(data_json):
         raise Exception('现有获取的数据不能相关性分析计算条件，无法得到计算结果')
 
     if cfg.INFO.SAVE_RESULT:
-        pass
+        result_dict['csv'] = save_cmadaas_data(data_dir, day_data=daily_df)
 
     return result_dict
 

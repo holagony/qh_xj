@@ -13,6 +13,7 @@ from Utils.data_loader_with_threads import get_cmadaas_radi_data, get_cmadaas_da
 from Utils.get_local_data import get_local_data
 from Utils.data_processing import daily_data_processing
 from Module12.wrapped.radiation_stats import radiation_stats
+from Utils.get_url_path import save_cmadaas_data
 
 
 def radi_data_processing(df):
@@ -95,7 +96,7 @@ def radiation_handler(data_json):
             daily_df = get_cmadaas_daily_data(years, daily_elements, sta_ids) # 站点数据下载
             daily_df = daily_data_processing(daily_df, years)
 
-            if sta_ids in ['52866', '56029', '52863', '52754', '52818', '52874', '56043', '56065']:
+            if sta_ids in ['51058', '51076', '51133', '51358', '51431', '51463', '51567', '51573', '51628', '51709', '51777', '51828', '52203']:
                 years_split = years.split(',')
                 num_years = int(years_split[1]) - int(years_split[0]) + 1
                 start_date = years_split[0] + '010100000'
@@ -108,6 +109,9 @@ def radiation_handler(data_json):
         try:
             result_dict = radiation_stats(daily_df, radi_df, sta_ids, param_a, param_b, divide_flag)
             result_dict['uuid'] = uuid4
+            # 7.结果保存
+            if cfg.INFO.SAVE_RESULT:
+                result_dict['csv'] = save_cmadaas_data(data_dir, day_data=daily_df, radi_data=radi_df)
         except Exception:
             raise Exception('无法在数据库中检索到自建站数据，请检查和记录选取的站号、时间和要素，进行反馈排查')
 

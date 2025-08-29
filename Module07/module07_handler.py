@@ -19,6 +19,8 @@ from Module07.wrapped.garden_city import calc_heat_island_garden_city
 from Module07.wrapped.heat_island import calc_heat_island
 from Report.code.Module07.heat_island import heat_island_report
 from Report.code.Module07.garden_city_report import garden_city_report
+from Utils.get_url_path import save_cmadaas_data
+
 
 def garden_city_handler(data_json):
     '''
@@ -97,6 +99,10 @@ def garden_city_handler(data_json):
             result_dict['report'] = None
         
         result_dict['result'] = result_table.to_dict(orient='records')
+        
+        # 7.结果保存
+        if cfg.INFO.SAVE_RESULT:
+            result_dict['csv'] = save_cmadaas_data(data_dir, day_data=daily_df)
 
     except Exception as e:
         logging.exception(e)
@@ -191,6 +197,10 @@ def heat_island_handler(data_json):
         if daily_df is not None and len(daily_df) != 0:
             checker = check(daily_df, 'D', daily_elements.split(','), sta_ids.split(','), years_split[0], years_split[1])
             result_dict.check_result['使用的天擎日要素'] = checker.run()
+        
+        # 7.结果保存
+        if cfg.INFO.SAVE_RESULT:
+            result_dict['csv'] = save_cmadaas_data(data_dir, day_data=daily_df)
 
     except Exception as e:
         logging.exception(e)

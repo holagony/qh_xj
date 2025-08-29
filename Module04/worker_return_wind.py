@@ -18,7 +18,7 @@ from Module00.wrapped.check import check
 from Module04.wrapped.return_period_wind import calc_return_period_wind
 from Module04.module04_utils import time_revision, height_revision, get_station
 from Report.code.Module04.re_wind import re_wind_report,re_wind_report_pg
-
+from Utils.get_url_path import save_cmadaas_data
 
 def callback(url, result_id, result):
     header = {'Content-Type': 'application/json'}
@@ -152,6 +152,10 @@ class workerReturnWind:
             if daily_df is not None and len(daily_df) != 0:
                 checker = check(daily_df, 'D', daily_elements.split(','), sta_ids.split(','), years_split[0], years_split[1])
                 wind_s_result.check_result['使用的天擎日要素'] = checker.run()
+            
+            # 6.结果保存
+            if cfg.INFO.SAVE_RESULT:
+                wind_s_result['csv'] = save_cmadaas_data(data_dir, day_data=daily_df)
 
         except Exception as e:
             logging.exception(e)

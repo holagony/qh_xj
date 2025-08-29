@@ -56,7 +56,7 @@ from Report.code.Module03.eice_days import eice_days_report
 
 from docx import Document
 from docxcompose.composer import Composer
-
+from Utils.get_url_path import save_cmadaas_data
 
 def weather_phenomena_days(data_json):
     '''
@@ -725,9 +725,7 @@ def weather_phenomena_days(data_json):
 
     # 7.结果保存
     if cfg.INFO.SAVE_RESULT:
-        result_dict.file_url = edict()
-        url_dict = get_url_path(data_dir, result_list)
-        result_dict.file_url = url_dict
+        result_dict['csv'] = save_cmadaas_data(data_dir, mon_data=monthly_df, day_data=daily_df)
 
     return result_dict
 
@@ -1034,9 +1032,7 @@ def init_and_end_days(data_json):
 
     # 7.结果保存
     if cfg.INFO.SAVE_RESULT:
-        result_dict.file_url = edict()
-        url_dict = get_url_path(data_dir, result_list)
-        result_dict.file_url = url_dict
+        result_dict['csv'] = save_cmadaas_data(data_dir, day_data=daily_df)
 
     return result_dict
 
@@ -1176,9 +1172,7 @@ def weather_process_stats(data_json):
 
     # 7.结果保存
     if cfg.INFO.SAVE_RESULT:
-        result_dict.file_url = edict()
-        url_dict = get_url_path(data_dir, result_list)
-        result_dict.file_url = url_dict
+        result_dict['csv'] = save_cmadaas_data(data_dir, day_data=daily_df)
 
     return result_dict
 
