@@ -80,7 +80,7 @@ def cold_wave_statistics(data_df):
         table3的pandas apply函数
         '''
         t = x['当日风向'].value_counts().to_frame()
-        t['频数'] = (t['当日风向'] / t['当日风向'].sum()).round(3)
+        t['频数'] = (t['当日风向'] / t['当日风向'].sum()).round(1)
         return t
 
     try:

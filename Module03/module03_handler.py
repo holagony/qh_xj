@@ -49,6 +49,11 @@ from Report.code.Module03.tem_under0_init_and_end_days_report import tem_under0_
 from Report.code.Module03.thund_days import thund_days_report
 from Report.code.Module03.thund_init_and_end_days_report import thund_init_and_end_days_report
 from Report.code.Module03.tord_days import tord_days_report
+from Report.code.Module03.tem_max_days_report import tem_max_days_report
+from Report.code.Module03.tem_min_days_report import tem_min_days_report
+from Report.code.Module03.pre_strong_report import pre_strong_report
+from Report.code.Module03.eice_days import eice_days_report
+
 from docx import Document
 from docxcompose.composer import Composer
 
@@ -74,16 +79,14 @@ def weather_phenomena_days(data_json):
         os.makedirs(data_dir)
         os.chmod(data_dir, 0o007 | 0o070 | 0o700)
 
-    if isinstance(main_sta_ids, list):
-        main_sta_ids = [str(ids) for ids in main_sta_ids]
-        main_sta_ids = ','.join(main_sta_ids)
     if isinstance(main_sta_ids, int):
         main_sta_ids = str(main_sta_ids)
 
     if isinstance(sub_sta_ids, list):
         sub_sta_ids = [str(ids) for ids in sub_sta_ids]
         sub_sta_ids = ','.join(sub_sta_ids)
-    if isinstance(sub_sta_ids, int):  # 只有单个值的情况
+
+    elif isinstance(sub_sta_ids, int):  # 只有单个值的情况
         sub_sta_ids = str(sub_sta_ids)
 
     # 3.拼接需要下载的参数
@@ -128,6 +131,9 @@ def weather_phenomena_days(data_json):
 
         elif ele == 'GaWIN_Days':
             monthly_elements += 'GaWIN_Days,'
+        
+        elif ele == 'EICE_Days':
+            monthly_elements += 'EICE_Days,'
 
         elif ele == 'Squa':
             daily_elements += 'Squa,'
@@ -155,10 +161,17 @@ def weather_phenomena_days(data_json):
 
         elif ele == 'Thund':
             daily_elements += 'Thund,'
-
+        elif ele == 'TEM_Max':
+            daily_elements += 'TEM_Max,'
+        elif ele == 'TEM_Min':
+            daily_elements += 'TEM_Min,'
+        elif ele == 'PRE_Time_2020':
+            daily_elements += 'PRE_Time_2020,'
+            
+            
     # 4.数据获取
-    month_ele_list = ['PRE_Days', 'Hail_Days', 'Fog_Days', 'Mist_Days', 'Glaze_Days', 'Tord_Days', 'SoRi_Days', 'SaSt_Days', 'FlSa_Days', 'FlDu_Days', 'Haze_Days', 'GaWIN_Days']
-    day_ele_list = ['Squa', 'Lit', 'DuWhr', 'DrSnow', 'Snow', 'Frost', 'GSS', 'ICE', 'Thund']
+    month_ele_list = ['PRE_Days', 'Hail_Days', 'Fog_Days', 'Mist_Days', 'Glaze_Days', 'Tord_Days', 'SoRi_Days', 'SaSt_Days', 'FlSa_Days', 'FlDu_Days', 'Haze_Days', 'GaWIN_Days', 'EICE_Days']
+    day_ele_list = ['Squa', 'Lit', 'DuWhr', 'DrSnow', 'Snow', 'Frost', 'GSS', 'ICE', 'Thund','TEM_Max','TEM_Min','PRE_Time_2020']
     
     if cfg.INFO.READ_LOCAL:
 
@@ -171,6 +184,9 @@ def weather_phenomena_days(data_json):
         if set(month_ele_list) & set(monthly_elements_tmp):
             
             monthly_df = pd.read_csv(cfg.FILES.QH_DATA_MONTH, low_memory=False)
+            if 'EICE_Days' in monthly_elements:
+                monthly_df['EICE_Days']=15
+            
             month_eles = ('Station_Id_C,Station_Name,Lat,Lon,Datetime,Year,Mon,' + monthly_elements[:-1]).split(',')
             monthly_df = get_local_data(monthly_df, sta_ids, month_eles, years, 'Month')
 
@@ -441,6 +457,25 @@ def weather_phenomena_days(data_json):
                 result_dict.GaWIN_Days['report'] = report_path.replace(cfg.INFO.OUT_DATA_DIR, cfg.INFO.OUT_DATA_URL)
             except:
                 result_dict.GaWIN_Days['report'] = None
+                
+        # 电线结冰
+        elif ele == 'EICE_Days':
+            result_dict.EICE_Days = edict()
+            ele_list.append('EICE_Days')
+            EICE_Days_tab1, EICE_Days_tab2, EICE_Days_tab3 = table_stats_part1(monthly_df, 'EICE_Days')
+            result_list.append(OrderedDict(zip(['历年电线结冰日统计', '累年电线结冰日统计', '累年各月电线结冰日统计'], [EICE_Days_tab1, EICE_Days_tab2, EICE_Days_tab3])))
+
+            result_dict.EICE_Days['table1'] = EICE_Days_tab1
+            result_dict.EICE_Days['table2'] = EICE_Days_tab2
+            result_dict.EICE_Days['table3'] = EICE_Days_tab3
+
+            try:
+                report_path = eice_days_report(EICE_Days_tab1, EICE_Days_tab2, EICE_Days_tab3, monthly_df, data_dir, main_sta_ids)
+                result_path.append(report_path)
+                report_path = report_path.replace(cfg.INFO.IN_DATA_DIR, cfg.INFO.OUT_DATA_DIR)
+                result_dict.EICE_Days['report'] = report_path.replace(cfg.INFO.OUT_DATA_DIR, cfg.INFO.OUT_DATA_URL)
+            except:
+                result_dict.EICE_Days['report'] = None
 
         elif ele == 'Squa':
             result_dict.Squa = edict()
@@ -603,7 +638,61 @@ def weather_phenomena_days(data_json):
                 result_dict.Thund['report'] = report_path.replace(cfg.INFO.OUT_DATA_DIR, cfg.INFO.OUT_DATA_URL)
             except:
                 result_dict.Thund['report'] = None
+                
+        elif ele == 'TEM_Max':
+            result_dict.tem_max = edict()
+            ele_list.append('TEM_Max')
+            TEM_Max_tab1, TEM_Max_tab2, TEM_Max_tab3 = table_stats_part1(daily_df, 'TEM_Max')
+            result_list.append(OrderedDict(zip(['历年高温日统计', '累年高温日统计', '累年各月高温日统计'], [TEM_Max_tab1, TEM_Max_tab2, TEM_Max_tab3])))
 
+            result_dict.tem_max['table1'] = TEM_Max_tab1
+            result_dict.tem_max['table2'] = TEM_Max_tab2
+            result_dict.tem_max['table3'] = TEM_Max_tab3
+
+            try:
+                report_path = tem_max_days_report(TEM_Max_tab1, TEM_Max_tab2, TEM_Max_tab3, daily_df, data_dir, main_sta_ids)
+                result_path.append(report_path)
+                report_path = report_path.replace(cfg.INFO.IN_DATA_DIR, cfg.INFO.OUT_DATA_DIR)
+                result_dict.tem_max['report'] = report_path.replace(cfg.INFO.OUT_DATA_DIR, cfg.INFO.OUT_DATA_URL)
+            except:
+                result_dict.tem_max['report'] = None
+                
+        elif ele == 'TEM_Min':
+            result_dict.tem_min = edict()
+            ele_list.append('TEM_Min')
+            TEM_Min_tab1, TEM_Min_tab2, TEM_Min_tab3 = table_stats_part1(daily_df, 'TEM_Min')
+            result_list.append(OrderedDict(zip(['历年低温日统计', '累年低温日统计', '累年各月低温日统计'], [TEM_Min_tab1, TEM_Min_tab2, TEM_Min_tab3])))
+
+            result_dict.tem_min['table1'] = TEM_Min_tab1
+            result_dict.tem_min['table2'] = TEM_Min_tab2
+            result_dict.tem_min['table3'] = TEM_Min_tab3
+
+            try:
+                report_path =tem_min_days_report(TEM_Min_tab1, TEM_Min_tab2, TEM_Min_tab3, daily_df, data_dir, main_sta_ids)
+                result_path.append(report_path)
+                report_path = report_path.replace(cfg.INFO.IN_DATA_DIR, cfg.INFO.OUT_DATA_DIR)
+                result_dict.tem_min['report'] = report_path.replace(cfg.INFO.OUT_DATA_DIR, cfg.INFO.OUT_DATA_URL)
+            except:
+                result_dict.tem_min['report'] = None                
+
+        elif ele == 'PRE_Time_2020':
+            result_dict.pre_strong = edict()
+            ele_list.append('PRE_Time_2020')
+            PRE_Time_2020_tab1, PRE_Time_2020_tab2, PRE_Time_2020_tab3 = table_stats_part1(daily_df, 'PRE_Time_2020')
+            result_list.append(OrderedDict(zip(['历年强降雨日统计', '累年强降雨日统计', '累年各月强降雨日统计'], [PRE_Time_2020_tab1, PRE_Time_2020_tab2, PRE_Time_2020_tab3])))
+
+            result_dict.pre_strong['table1'] = PRE_Time_2020_tab1
+            result_dict.pre_strong['table2'] = PRE_Time_2020_tab2
+            result_dict.pre_strong['table3'] = PRE_Time_2020_tab3
+
+            try:
+                report_path = pre_strong_report(PRE_Time_2020_tab1, PRE_Time_2020_tab2, PRE_Time_2020_tab3, daily_df, data_dir, main_sta_ids)
+                result_path.append(report_path)
+                report_path = report_path.replace(cfg.INFO.IN_DATA_DIR, cfg.INFO.OUT_DATA_DIR)
+                result_dict.pre_strong['report'] = report_path.replace(cfg.INFO.OUT_DATA_DIR, cfg.INFO.OUT_DATA_URL)
+            except:
+                result_dict.pre_strong['report'] = None   
+                
     if len(result_path) == 0:
         result_dict['report'] = None
     else:
@@ -625,6 +714,8 @@ def weather_phenomena_days(data_json):
     # 总表1
     if daily_df is not None:
         main_station_name = daily_df[daily_df['Station_Id_C'] == main_sta_ids]['Station_Name'][0]
+    else:
+        main_station_name = monthly_df[monthly_df['Station_Id_C'] == main_sta_ids]['Station_Name'][0]
 
     if len(ele_list) != 0:
         result_dict.total_table = edict()
@@ -658,16 +749,14 @@ def init_and_end_days(data_json):
         os.makedirs(data_dir)
         os.chmod(data_dir, 0o007 | 0o070 | 0o700)
 
-    if isinstance(main_sta_ids, list):
-        main_sta_ids = [str(ids) for ids in main_sta_ids]
-        main_sta_ids = ','.join(main_sta_ids)
     if isinstance(main_sta_ids, int):
         main_sta_ids = str(main_sta_ids)
 
     if isinstance(sub_sta_ids, list):
         sub_sta_ids = [str(ids) for ids in sub_sta_ids]
         sub_sta_ids = ','.join(sub_sta_ids)
-    if isinstance(sub_sta_ids, int):  # 只有单个值的情况
+
+    elif isinstance(sub_sta_ids, int):  # 只有单个值的情况
         sub_sta_ids = str(sub_sta_ids)
 
     if 'Frost' in elements:
@@ -969,16 +1058,14 @@ def weather_process_stats(data_json):
         os.makedirs(data_dir)
         os.chmod(data_dir, 0o007 | 0o070 | 0o700)
 
-    if isinstance(main_sta_ids, list):
-        main_sta_ids = [str(ids) for ids in main_sta_ids]
-        main_sta_ids = ','.join(main_sta_ids)
     if isinstance(main_sta_ids, int):
         main_sta_ids = str(main_sta_ids)
 
     if isinstance(sub_sta_ids, list):
         sub_sta_ids = [str(ids) for ids in sub_sta_ids]
         sub_sta_ids = ','.join(sub_sta_ids)
-    if isinstance(sub_sta_ids, int):  # 只有单个值的情况
+
+    elif isinstance(sub_sta_ids, int):  # 只有单个值的情况
         sub_sta_ids = str(sub_sta_ids)
 
     # 3.拼接需要下载的参数
@@ -1099,4 +1186,4 @@ if __name__=='__main__':
     years="1970,2023"
     sub_sta_ids=["56151"]
     main_sta_ids="56067"
-    elements=["Snow"]
+    elements=["Thund","GSS","TEM_Min","TEM_Max","PRE_Time_2020"]

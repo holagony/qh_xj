@@ -128,7 +128,7 @@ def cold_rainy_freez_report(cold_rainy, cold_freezing, day_data,data_dir,main_st
     dic['start_year']=day_data.index.year[0]
     dic['end_year']=day_data.index.year[-1]
 
-    dic['average_cold_rain']=round(result_rain2['过程天数'].sum()/(dic['end_year']-dic['start_year']+1),2)
+    dic['average_cold_rain']=round(result_rain2['过程天数'].sum()/(dic['end_year']-dic['start_year']+1),1)
     
     dic['min_cold_rain']=result_rain2['过程天数'].min()
     min_years = result_rain2[result_rain2['过程天数'] ==result_rain2['过程天数'].min()]['年'].tolist()
@@ -139,7 +139,7 @@ def cold_rainy_freez_report(cold_rainy, cold_freezing, day_data,data_dir,main_st
     max_years_str = '、'.join(map(str, max_years))
     dic['max_cold_rain_year']=max_years_str
 
-    dic['average_cold_freez']=round(result_freez2['过程天数'].sum()/(dic['end_year']-dic['start_year']+1),2)
+    dic['average_cold_freez']=round(result_freez2['过程天数'].sum()/(dic['end_year']-dic['start_year']+1),1)
 
     dic['min_cold_freez']=result_freez2['过程天数'].min()
     min_years = result_freez2[result_freez2['过程天数'] ==result_freez2['过程天数'].min()]['年'].tolist()

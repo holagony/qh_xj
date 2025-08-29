@@ -98,7 +98,7 @@ def thund_init_and_end_days_report(table4,table5,day_data,data_dir,main_sta_ids)
     dic['station_name']=station_name
     dic['start_year']=day_data.index.year.unique()[0]
     dic['end_year']=day_data.index.year.unique()[-1]
-    dic['average_frost']=round(np.nanmean(table4u.iloc[:,1].astype(float)),2)
+    dic['average_frost']=round(np.nanmean(table4u.iloc[:,1].astype(float)),1)
 
     
     dic['start_frost_average_mon']=table5u.iloc[0,1].split('-')[0]

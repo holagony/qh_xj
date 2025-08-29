@@ -116,13 +116,13 @@ def cold_wave_report(cold_wave_result, cold_wave_wind, cold_wave_wind_d,day_data
     dic['start_year']=day_data.index.year[0]
     dic['end_year']=day_data.index.year[-1]
 
-    dic['average_day']=round(cold_wave_resultu['寒潮天数'].sum()/(dic['end_year']-dic['start_year']+1),2)
+    dic['average_day']=round(cold_wave_resultu['寒潮天数'].sum()/(dic['end_year']-dic['start_year']+1),1)
 
     dic['min_day']=result2['寒潮日'].min()
     dic['max_day']=result2['寒潮日'].max()
     
     
-    dic['average_tem']=round(result2['温度降幅'].mean(),2)
+    dic['average_tem']=round(result2['温度降幅'].mean(),1)
     dic['min_tem']=result['温度降幅'].min()
     min_years = result[result['温度降幅'] ==result['温度降幅'].min()]['年'].tolist()
     min_years_str = '、'.join(map(str, min_years))

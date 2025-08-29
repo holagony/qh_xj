@@ -34,6 +34,10 @@ def table_stats_part1(data_df, element_name):
     积雪 GSS
     结冰 ICE
     雷暴 Thund
+    高温 TEM_Max
+    低温 TEM_Min
+    暴雨 PRE_Time_2020
+    
     
     输出的表格为：
     table1: 各个站历年的天气现象次数
@@ -101,6 +105,13 @@ def table_stats_part1(data_df, element_name):
         return concat
     
     try:
+        if element_name == 'TEM_Max':
+            data_df[element_name]=(data_df[element_name]>30).astype(int)
+        elif element_name == 'TEM_Min':
+            data_df[element_name]=(data_df[element_name]<0).astype(int)
+        elif element_name == 'PRE_Time_2020':
+            data_df[element_name]=(data_df[element_name]>25).astype(int)
+        
         station_name = data_df['Station_Name'].unique().tolist()
         table1 = data_df.groupby('Station_Name').apply(table1_stats).T
         table1.columns = [name + '站' for name in table1.columns]
@@ -135,4 +146,4 @@ if __name__ == '__main__':
     
     table1, table2, table3 = table_stats_part1(month_data, 'GaWIN_Days')
     data_df=month_data
-    element_name='GaWIN_Days'
+    element_name='TEM_Max'
