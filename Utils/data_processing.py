@@ -373,7 +373,7 @@ def monthly_data_processing(monthly_data, years):
         df_data['SSP_Mon'] = df_data['SSP_Mon'].apply(lambda x: np.nan if x > 999 else x)
 
     if 'FRS_Depth_Max' in df_data.columns:
-        df_data['FRS_Depth_Max'] = df_data['FRS_Depth_Max'].apply(lambda x: np.nan if x > 999 else x)
+        df_data['FRS_Depth_Max'] = df_data['FRS_Depth_Max'].apply(lambda x: np.nan if x > 999 else x/10)  # 转化为cm
     
     if 'Snow_Depth_Max' in df_data.columns:
         df_data['Snow_Depth_Max'] = df_data['Snow_Depth_Max'].apply(lambda x: np.nan if x > 999 else x)

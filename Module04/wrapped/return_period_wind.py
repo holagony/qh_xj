@@ -32,7 +32,7 @@ class calc_return_period_wind:
     '''
 
     def __init__(self, df_sequence, relocation_year, height_revision_year, measure_height, profile_index_main, 
-                 return_years, CI, fitting_method, img_path, from_database, sub_df, threshold, intercept):
+                 return_years, CI, fitting_method, img_path, from_database, sub_df, threshold, intercept,main_station):
 
         self.main_sequence = df_sequence
         self.relocation_year = relocation_year
@@ -47,6 +47,7 @@ class calc_return_period_wind:
         self.sub_df = sub_df
         self.intercept = intercept
         self.threshold = threshold
+        self.main_station = main_station
 
         if self.threshold == None:
             self.threshold = 0
@@ -81,9 +82,9 @@ class calc_return_period_wind:
         idx = length.index(max(length))
         weights = mean_list[idx] / np.array(mean_list)
 
-        data_out = [(weights[j] * data_section[j]).round(3) for j in range(len(data_section))]
+        data_out = [(weights[j] * data_section[j]).round(1) for j in range(len(data_section))]
         data_out = pd.concat(data_out)
-        data_out = data_out.round(3)
+        data_out = data_out.round(1)
 
         return data_out
 
@@ -103,7 +104,7 @@ class calc_return_period_wind:
                 data_in[year] = new_wind_s
 
         data_out = data_in.copy()
-        data_out = data_out.round(3)
+        data_out = data_out.round(1)
 
         return data_out
     
@@ -135,9 +136,9 @@ class calc_return_period_wind:
             w, b, r_square = linear_regression(concat_win['WIN_S_Max'], concat_win['最大风速'], intercept=self.intercept)
             w = round(w,3)
             b = round(b,3)
-            r_square = round(r_square,5)
+            r_square = round(r_square,3)
             params = [w, b, r_square]
-            concat_win = concat_win.round(3)
+            concat_win = concat_win.round(1)
             concat_win = concat_win.sample(n=200)
             data_points = concat_win.values.tolist()
 
@@ -159,7 +160,7 @@ class calc_return_period_wind:
             _, ks_result = fitting.kolmogorov_smirnov_test(sample_gumbel, data_in)  # KS检验
 
             params_dict['Gumbel'] = [loc, scale]
-            max_values_dict['耿贝尔'] = max_values.round(3).tolist()
+            max_values_dict['耿贝尔'] = max_values.round(1).tolist()
             ks_values['Gumbel_ks'] = ks_result
 
         if 'P3' in self.fitting_method:
@@ -169,7 +170,7 @@ class calc_return_period_wind:
             _, ks_result = fitting.kolmogorov_smirnov_test(sample_p3, data_in)
 
             params_dict['P3'] = [skew, loc, scale]
-            max_values_dict['皮尔逊Ⅲ型'] = max_values.round(3).tolist()
+            max_values_dict['皮尔逊Ⅲ型'] = max_values.round(1).tolist()
             ks_values['P3_ks'] = ks_result
 
             # 2023新增P3调参
@@ -239,7 +240,7 @@ class calc_return_period_wind:
         ci_result = np.array(ci_result)
         ci_result = ci_result.transpose(1, 0, 2)
         ci_result = ci_result.reshape(-1, 2 * len(self.fitting_method))
-        ci_result = ci_result.round(3)
+        ci_result = ci_result.round(1)
 
         # ci_result转成dataframe
         interval = self.CI
@@ -266,26 +267,66 @@ class calc_return_period_wind:
         '''
         画重现期拟合曲线图，x轴为概率坐标
         '''
-        # plt.rcParams['font.sans-serif'] = 'SimHei'
         plt.rcParams['axes.unicode_minus'] = False
         new_y_axis_name = y_axis_name + ' (m/s)'
-        
-        if y_axis_name == '最大风速':
-            ax.set_ylim(5, 40)
+
+        # 定义图表上X轴的可见概率范围
+        xlim_min, xlim_max = 0.1, 99.5
+
+        # --- 根据可见范围计算Y轴的最佳范围 ---
+
+        # 1. 筛选在可见X范围内的理论曲线数据
+        visible_mask_sample = (sample_x >= xlim_min) & (sample_x <= xlim_max)
+        visible_sample_y = sample_y[visible_mask_sample]
+
+        # 2. 筛选在可见X范围内的经验散点数据
+        # 必须先对数据排序以计算正确的经验概率
+        data_in_sorted = np.sort(data_in)[::-1]
+        empi_prob = (np.arange(len(data_in_sorted)) + 1) / (len(data_in_sorted) + 1) * 100
+        visible_mask_data = (empi_prob >= xlim_min) & (empi_prob <= xlim_max)
+        visible_data_in = data_in_sorted[visible_mask_data]
+
+        # 3. 合并所有可见数据并计算范围
+        # 清理可能存在的NaN或Inf值
+        visible_sample_y_clean = visible_sample_y[np.isfinite(visible_sample_y)]
+        visible_data_in_clean = visible_data_in[np.isfinite(visible_data_in)]
+
+        if len(visible_sample_y_clean) == 0 or len(visible_data_in_clean) == 0:
+            # 如果没有有效数据，使用默认范围
+            y_min, y_max = 0, 50
         else:
-            ax.set_ylim(15, 40)
+            combined_data = np.concatenate([visible_sample_y_clean, visible_data_in_clean])
+            data_min = np.min(combined_data)
+            data_max = np.max(combined_data)
+            data_range = data_max - data_min
             
+            # 设置边距
+            if data_range <= 1e-10:
+                margin = max(abs(data_min), abs(data_max), 1) * 0.1
+            else:
+                margin = data_range * 0.04
+            
+            y_min = max(0, data_min - margin)
+            y_max = data_max + margin
+
+            # 最终检查，确保范围值有效
+            if not (np.isfinite(y_min) and np.isfinite(y_max)):
+                y_min, y_max = 0, 50
+        
+        # --- 开始画图 ---
+        
         ax.grid(True)
-        ax.set_xlabel('KS-test: ' + str(ks_val.round(5)) + '   频率P(%)', fontproperties=font)
+        ax.set_xlabel('KS-test: ' + str(ks_val.round(3)) + '   频率P(%)', fontproperties=font)
         ax.set_ylabel(new_y_axis_name, fontproperties=font)
         ax.set_xscale('prob')
         plt.xticks(size=7)
 
-        data_in = np.sort(data_in)[::-1]
-        empi_prob = (np.arange(len(data_in)) + 1) / (len(data_in) + 1) * 100
-        ax.set_xlim(0.1, 99.5)
+        # 应用计算好的坐标轴范围
+        ax.set_xlim(xlim_min, xlim_max)
+        ax.set_ylim(y_min, y_max)
 
-        ax.scatter(empi_prob, data_in, marker='o', s=8, c='red', edgecolors='k', label='经验概率数据点')
+        # 绘制完整数据，matplotlib会自动裁剪到xlim和ylim
+        ax.scatter(empi_prob, data_in_sorted, marker='o', s=8, c='red', edgecolors='k', label='经验概率数据点')
         ax.plot(sample_x, sample_y, '--', lw=1, label=method_name + '分布拟合曲线')
         ax.legend(prop=font)
 
@@ -303,7 +344,7 @@ class calc_return_period_wind:
 
         # Step0 结果字典创建/数据处理
         main_wind_seq = self.main_sequence['WIN_S_Max'].resample('1A', closed='right', label='right').max()  # 参证站的日风速数据转化为年数据
-        main_wind_seq = main_wind_seq.round(3).dropna()
+        main_wind_seq = main_wind_seq.round(1).dropna()
         year_vals_save = main_wind_seq.to_frame().copy()
         year_vals_save.insert(loc=0, column='year', value=year_vals_save.index.year)
         year_vals_save.columns = ['年份','最大风速(m/s)']
@@ -311,7 +352,7 @@ class calc_return_period_wind:
 
         # 增加极大风速序列保存
         main_wind_seq_i = self.main_sequence['WIN_S_Inst_Max'].resample('1A', closed='right', label='right').max()  # 参证站的日风速数据转化为年数据
-        main_wind_seq_i = main_wind_seq_i.round(3).dropna()
+        main_wind_seq_i = main_wind_seq_i.round(1).dropna()
         year_vals_i_save = main_wind_seq_i.to_frame().copy()
         year_vals_i_save.insert(loc=0, column='year', value=year_vals_i_save.index.year)
         year_vals_i_save.columns = ['年份','极大风速(m/s)']
@@ -370,7 +411,7 @@ class calc_return_period_wind:
                 sub_max_vals = edict()
                 for key in list(max_values_dict.keys()):
                     max_vals = np.array(max_values_dict[key]) * params[0] + params[1]
-                    sub_max_vals[key] = max_vals.round(3).tolist()
+                    sub_max_vals[key] = max_vals.round(1).tolist()
 
                 result_dict.extra_station['max_values'] = sub_max_vals
                 result_dict.extra_station['params'] = params
@@ -403,6 +444,14 @@ class calc_return_period_wind:
         w_pressure = edict()
         for key, value in max_values_dict.items():
             w_pressure[key] = [((val**2)*rho_10*(0.5)*1e-3).round(3) for val in max_values_dict[key]] # 基本风压 kN/m**2
+            
+        data_prs=pd.read_csv(cfg.FILES.WIND_SNOW_PRESSURE,encoding='gbk')
+        data_prs = data_prs[(data_prs['类别'] == '风压 ') & (data_prs['站号'] == int(self.main_station))]
+        if len(data_prs) == 1:
+            w_pressure['参考值（国标）']=[ data_prs[str(y)].values[0] if str(y) in data_prs.columns else None for y in self.return_years]
+        else:
+            w_pressure['参考值（国标）']=[ None for y in self.return_years]
+                
         result_dict.main_return_result['wind_pressure'] = w_pressure
 
         # Step7 参证站重现期画图
@@ -439,7 +488,7 @@ class calc_return_period_wind:
 
 if __name__ == '__main__':
     daily_df = pd.read_csv(cfg.FILES.QH_DATA_DAY)
-    post_daily_df = daily_data_processing(daily_df)
+    post_daily_df = daily_data_processing(daily_df,'1994,2023')
     # post_daily_df = post_daily_df[post_daily_df.index.year>=1994]
     # post_daily_df = post_daily_df[post_daily_df.index.year<=2023]
     df_sequence = post_daily_df[post_daily_df['Station_Id_C']=='52853']
@@ -447,7 +496,7 @@ if __name__ == '__main__':
     return_years = [2,3,5,10,20,30,50,100]
     CI = [99,95]
     fitting_method = ['Gumbel', 'P3']
-    img_path = r'C:/Users/MJY/Desktop/result'
+    img_path = r'D:\Project\3_项目\2_气候评估和气候可行性论证'
     from_database = 0
     threshold = 0
     intercept = True

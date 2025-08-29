@@ -79,7 +79,7 @@ class calc_return_period_tem:
             w1, b1, r_square1 = linear_regression(concat_tem_max['TEM_Max'], concat_tem_max['最高气温'], intercept=self.intercept)
             w1 = round(w1,3)
             b1 = round(b1,3)
-            r_square1 = round(r_square1,5)
+            r_square1 = round(r_square1,3)
             params_max = [w1, b1, r_square1]
             concat_tem_max = concat_tem_max.sample(n=200)
             data_points_max = concat_tem_max.values.tolist()
@@ -92,7 +92,7 @@ class calc_return_period_tem:
             w2, b2, r_square2 = linear_regression(concat_tem_min['TEM_Min'], concat_tem_min['最低气温'], intercept=self.intercept)
             w2 = round(w2,3)
             b2 = round(b2,3)
-            r_square2 = round(r_square2,5)
+            r_square2 = round(r_square2,3)
             params_min = [w2, b2, r_square2]
             concat_tem_min = concat_tem_min.sample(n=200)
             data_points_min = concat_tem_min.values.tolist()
@@ -115,40 +115,54 @@ class calc_return_period_tem:
                 _, ks_result = fitting.kolmogorov_smirnov_test(sample_gumbel, data_in)  # KS检验
 
             elif (ele_name == 'ex_tem_min') or (ele_name == 'base_tem_min'):
-                x0 = data_in.max() + 5
-                data_in_tmp = x0 - data_in # 极小值序列转换为极大值序列
-                loc, scale = fitting.estimate_parameters_gumbel(data_in_tmp,method='MOM')
-                max_values = fitting.get_max_values_gumbel(self.return_years, loc, scale)
-                max_values = x0 - max_values # 还原后的极小值重现期对应的数值
-                sample_gumbel = stats.gumbel_r.rvs(loc, scale, 200)
-                _, ks_result = fitting.kolmogorov_smirnov_test(sample_gumbel, data_in_tmp)  # KS检验
+                # x0 = data_in.max() + 5
+                # data_in_tmp = x0 - data_in # 极小值序列转换为极大值序列
+                # loc, scale = fitting.estimate_parameters_gumbel(data_in_tmp,method='MOM')
+                # max_values = fitting.get_max_values_gumbel(self.return_years, loc, scale)
+                # max_values = x0 - max_values # 还原后的极小值重现期对应的数值
+                # sample_gumbel = stats.gumbel_r.rvs(loc, scale, 200)
+                # _, ks_result = fitting.kolmogorov_smirnov_test(sample_gumbel, data_in_tmp)  # KS检验
+                
+                # 改进的极小值Gumbel分布处理
+                # 使用Gumbel极小值分布（Gumbel Type III）
+                data_in_neg = -data_in  # 将极小值转换为极大值
+                loc, scale = fitting.estimate_parameters_gumbel(data_in_neg, method='MOM')
+                max_values_neg = fitting.get_max_values_gumbel(self.return_years, loc, scale)
+                max_values = -max_values_neg  # 转换回极小值
+                
+                # KS检验使用原始数据和对应的极小值分布
+                sample_gumbel_min = -stats.gumbel_r.rvs(loc, scale, 200)
+                _, ks_result = fitting.kolmogorov_smirnov_test(sample_gumbel_min, data_in)
                 
             params_dict['Gumbel'] = [loc, scale]
             max_values_dict['耿贝尔'] = max_values.round(1).tolist()
             ks_values['Gumbel_ks'] = ks_result
 
-        if 'P3' in self.fitting_method: # p3最小用chatgpt提供的镜像方法
-            skew, loc, scale = fitting.estimate_parameters_pearson3(data_in, method='normal')
-            max_values = fitting.get_max_values_pearson3(self.return_years, 0, skew, loc, scale)
+        if 'P3' in self.fitting_method:
+            if (ele_name == 'ex_tem_max') or (ele_name == 'base_tem_max'):
+                # 极大值直接使用Pearson3分布
+                skew, loc, scale = fitting.estimate_parameters_pearson3(data_in, method='normal')
+                max_values = fitting.get_max_values_pearson3(self.return_years, 0, skew, loc, scale)
+                sample_p3 = stats.pearson3.rvs(skew, loc, scale, 200)
+                _, ks_result = fitting.kolmogorov_smirnov_test(sample_p3, data_in)
+                
+            elif (ele_name == 'ex_tem_min') or (ele_name == 'base_tem_min'):
+                # 改进的极小值Pearson3分布处理
+                # 方法1：使用负值转换
+                data_in_neg = -data_in
+                skew, loc, scale = fitting.estimate_parameters_pearson3(data_in_neg, method='normal')
+                max_values_neg = fitting.get_max_values_pearson3(self.return_years, 0, skew, loc, scale)
+                max_values = -max_values_neg
+                
+                # KS检验
+                sample_p3_min = -stats.pearson3.rvs(skew, loc, scale, 200)
+                _, ks_result = fitting.kolmogorov_smirnov_test(sample_p3_min, data_in)
 
-            if (ele_name == 'ex_tem_min') or (ele_name == 'base_tem_min'):
-                max_values = 2*loc - max_values # 根据对称，还原后的极小值重现期对应的数值
-
-            sample_p3 = stats.pearson3.rvs(skew, loc, scale, 200)
-            _, ks_result = fitting.kolmogorov_smirnov_test(sample_p3, data_in)
             params_dict['P3'] = [skew, loc, scale]
             max_values_dict['皮尔逊Ⅲ型'] = max_values.round(1).tolist()
             ks_values['P3_ks'] = ks_result
 
-            # 新增P3调参 收集初始矩法参数
-            # p3_result = pearson_type3(element_name=ele_name, 
-            #                           data=data_in, 
-            #                           rp=self.return_years,
-            #                           img_path=self.img_path, 
-            #                           mode=1, sv_ratio=0, ex_fitting=True, manual_cs_cv=None)
-            # p3_base = p3_result
-
-        return params_dict, max_values_dict, ks_values#, p3_base
+        return params_dict, max_values_dict, ks_values
 
     def calc_confidence_interval(self, data_in, ele_name):
         '''
@@ -178,11 +192,17 @@ class calc_return_period_tem:
                     max_values = max_values.reshape(1, -1)
 
                 elif ele_name == 'ex_tem_min':
-                    x0 = bootstrap.max() + 5
-                    bootstrap = x0 - bootstrap # 极小值序列转换为极大值序列
-                    loc, scale = fitting.estimate_parameters_gumbel(bootstrap, method='MOM')
-                    max_values = fitting.get_max_values_gumbel(self.return_years, loc, scale)
-                    max_values = x0 - max_values # 还原后的极小值重现期对应的数值
+                    # x0 = bootstrap.max() + 5
+                    # bootstrap = x0 - bootstrap # 极小值序列转换为极大值序列
+                    # loc, scale = fitting.estimate_parameters_gumbel(bootstrap, method='MOM')
+                    # max_values = fitting.get_max_values_gumbel(self.return_years, loc, scale)
+                    # max_values = x0 - max_values # 还原后的极小值重现期对应的数值
+
+                    # 改进的极小值处理
+                    bootstrap_neg = -bootstrap
+                    loc, scale = fitting.estimate_parameters_gumbel(bootstrap_neg, method='MOM')
+                    max_values_neg = fitting.get_max_values_gumbel(self.return_years, loc, scale)
+                    max_values = -max_values_neg
                     max_values = max_values.reshape(1, -1)
 
                 all_max_values.append(max_values)
@@ -204,9 +224,11 @@ class calc_return_period_tem:
                     max_values = max_values.reshape(1, -1)
 
                 elif ele_name == 'ex_tem_min':
-                    skew, loc, scale = fitting.estimate_parameters_pearson3(bootstrap, method='normal')
-                    max_values = fitting.get_max_values_pearson3(self.return_years, 0, skew, loc, scale)
-                    max_values = 2*loc - max_values
+                    # 改进的极小值处理
+                    bootstrap_neg = -bootstrap
+                    skew, loc, scale = fitting.estimate_parameters_pearson3(bootstrap_neg, method='normal')
+                    max_values_neg = fitting.get_max_values_pearson3(self.return_years, 0, skew, loc, scale)
+                    max_values = -max_values_neg
                     max_values = max_values.reshape(1, -1)
 
                 all_max_values.append(max_values)
@@ -258,23 +280,56 @@ class calc_return_period_tem:
         plt.rcParams['axes.unicode_minus'] = False
         # fig, ax = plt.subplots(figsize=(7, 5))
 
+        # 计算数据范围，用于自动设置y轴范围
+        # 过滤掉NaN和Inf值
+        data_in_clean = data_in[np.isfinite(data_in)]
+        sample_y_clean = sample_y[np.isfinite(sample_y)]
+        
+        if len(data_in_clean) == 0 or len(sample_y_clean) == 0:
+            # 如果没有有效数据，使用默认范围
+            data_min, data_max = -50, 50
+            margin = 5
+        else:
+            combined_data = np.concatenate([data_in_clean, sample_y_clean])
+            data_min = np.min(combined_data)
+            data_max = np.max(combined_data)
+            data_range = data_max - data_min
+            
+            # 如果数据范围太小或为0，设置最小边距
+            if data_range <= 1e-10:
+                margin = max(abs(data_min), abs(data_max), 1) * 0.1
+            else:
+                margin = data_range * 0.1  # 10%的边距
+        
+        # 确保y轴范围值是有限的
+        y_min = data_min - margin
+        y_max = data_max + margin
+        
+        # 最后检查，确保没有NaN或Inf
+        if not (np.isfinite(y_min) and np.isfinite(y_max)):
+            y_min, y_max = -50, 50
+        
         if y_axis_name == '极端最高气温':
             new_y_axis_name = y_axis_name + ' (°C)'
             data_in = np.sort(data_in)[::-1]
-            ax.set_ylim(20, 40)
+            # 自动适应y轴范围
+            ax.set_ylim(y_min, y_max)
 
         elif y_axis_name == '基本气温(最高)':
             new_y_axis_name = y_axis_name + ' (°C)'
             data_in = np.sort(data_in)[::-1]
-            ax.set_ylim(20, 40)
+            # 自动适应y轴范围
+            ax.set_ylim(y_min, y_max)
 
         elif (y_axis_name == '极端最低气温') or (y_axis_name == '基本气温(最低)'):
             new_y_axis_name = y_axis_name + ' (°C)'
             data_in = np.sort(data_in)  # 从小到大排序
             ax.invert_yaxis()
+            # 自动适应y轴范围（注意反转轴的顺序）
+            ax.set_ylim(y_max, y_min)
 
         ax.grid(True)
-        ax.set_xlabel('KS-test: ' + str(ks_val.round(5)) + '   频率P(%)', fontproperties=font)
+        ax.set_xlabel('KS-test: ' + str(ks_val.round(3)) + '   频率P(%)', fontproperties=font)
         ax.set_ylabel(new_y_axis_name, fontproperties=font)
         ax.set_xscale('prob')
         plt.xticks(size=7)
@@ -416,21 +471,22 @@ class calc_return_period_tem:
                     result_dict.extra_station.min_tem['params'] = params_min
                     result_dict.extra_station.min_tem['data'] = data_points_min
 
-            # 画图
+            # 画图 - 改进的绘图逻辑
             result_dict.min_tem.img_save_path = edict()
             keys = list(params_dict.keys())
             x = np.linspace(0.01, 100, 1000)
-            x0 = min_tem_seq.max() + 5 # 5度
 
             if 'Gumbel' in keys:
-                y = x0 - fitting.get_max_values_gumbel(100/x, params_dict['Gumbel'][0], params_dict['Gumbel'][1])
+                # 改进的Gumbel极小值绘图
+                y_neg = fitting.get_max_values_gumbel(100/x, params_dict['Gumbel'][0], params_dict['Gumbel'][1])
+                y = -y_neg  # 转换回极小值
                 save_path = self.plot_result(fig, ax, min_tem_seq, x, y, '极端最低气温', 'Gumbel', ks_values['Gumbel_ks'])
                 result_dict.min_tem.img_save_path['Gumbel_plot'] = save_path
 
             if 'P3' in keys:
-                y = fitting.get_max_values_pearson3(100/x, 0, params_dict['P3'][0], params_dict['P3'][1], params_dict['P3'][2])
-                loc = params_dict['P3'][1]
-                y = 2*loc - y
+                # 改进的P3极小值绘图
+                y_neg = fitting.get_max_values_pearson3(100/x, 0, params_dict['P3'][0], params_dict['P3'][1], params_dict['P3'][2])
+                y = -y_neg  # 转换回极小值
                 save_path = self.plot_result(fig, ax, min_tem_seq, x, y, '极端最低气温', 'Pearson3', ks_values['P3_ks'])
                 result_dict.min_tem.img_save_path['P3_plot'] = save_path
 
@@ -488,7 +544,8 @@ class calc_return_period_tem:
             base_tem_min.insert(loc=0, column='日期', value=base_tem_min.index.strftime("%Y-%m"))
             base_tem_min.reset_index(drop=True, inplace=True)
 
-            year_vals = base_tem_max.dropna()
+            # 修复bug：应该使用base_tem_min而不是base_tem_max
+            year_vals = base_tem_min.dropna()
             if year_vals.shape[0] < 15:
                 raise Exception('该参证站日数据存在缺测，转换后得到有效历年样本小于15个，不能进行后续重现期计算')
 

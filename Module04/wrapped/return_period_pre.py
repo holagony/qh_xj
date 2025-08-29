@@ -65,7 +65,7 @@ class calc_return_period_pre:
             w, b, r_square = linear_regression(concat_pre['PRE_Time_2020'], concat_pre['降水'], intercept=self.intercept)
             w = round(w,3)
             b = round(b,3)
-            r_square = round(r_square,5)
+            r_square = round(r_square,3)
             params = [w, b, r_square]
             
             concat_pre = concat_pre.round(1)
@@ -195,30 +195,63 @@ class calc_return_period_pre:
         '''
         画重现期拟合曲线图，x轴为概率坐标
         '''
-        # plt.rcParams['font.sans-serif'] = 'SimHei'
         plt.rcParams['axes.unicode_minus'] = False
+        
+        if y_axis_name == '日最大降水量':
+            new_y_axis_name = y_axis_name + ' (mm)'
+        else:
+            new_y_axis_name = y_axis_name + ' (mm/h)'
 
-        new_y_axis_name = y_axis_name + ' (mm)'
-        data_in = np.sort(data_in)[::-1]
-        ax.set_ylim(0, 120)
+        # 定义图表上X轴的可见概率范围
+        xlim_min, xlim_max = 0.1, 99.5
 
+        # --- 根据可见范围计算Y轴的最佳范围 ---
+        visible_mask_sample = (sample_x >= xlim_min) & (sample_x <= xlim_max)
+        visible_sample_y = sample_y[visible_mask_sample]
+
+        data_in_sorted = np.sort(data_in)[::-1]
+        empi_prob = (np.arange(len(data_in_sorted)) + 1) / (len(data_in_sorted) + 1) * 100
+        visible_mask_data = (empi_prob >= xlim_min) & (empi_prob <= xlim_max)
+        visible_data_in = data_in_sorted[visible_mask_data]
+
+        visible_sample_y_clean = visible_sample_y[np.isfinite(visible_sample_y)]
+        visible_data_in_clean = visible_data_in[np.isfinite(visible_data_in)]
+
+        if len(visible_sample_y_clean) == 0 or len(visible_data_in_clean) == 0:
+            y_min, y_max = 0, 100 # 默认范围
+        else:
+            combined_data = np.concatenate([visible_sample_y_clean, visible_data_in_clean])
+            data_min = np.min(combined_data)
+            data_max = np.max(combined_data)
+            data_range = data_max - data_min
+            
+            if data_range <= 1e-10:
+                margin = max(abs(data_min), abs(data_max), 1) * 0.1
+            else:
+                margin = data_range * 0.04
+            
+            y_min = max(0, data_min - margin)
+            y_max = data_max + margin
+
+            if not (np.isfinite(y_min) and np.isfinite(y_max)):
+                y_min, y_max = 0, 100
+        
+        # --- 开始画图 ---
         ax.grid(True)
-        ax.set_xlabel('KS-test: ' + str(ks_val.round(5)) + '   频率P(%)', fontproperties=font)
+        ax.set_xlabel('KS-test: ' + str(ks_val.round(3)) + '   频率P(%)', fontproperties=font)
         ax.set_ylabel(new_y_axis_name, fontproperties=font)
         ax.set_xscale('prob')
         plt.xticks(size=7)
 
-        empi_prob = (np.arange(len(data_in)) + 1) / (len(data_in) + 1) * 100
-        ax.set_xlim(0.1, 99.5)
+        ax.set_xlim(xlim_min, xlim_max)
+        ax.set_ylim(y_min, y_max)
 
-        ax.scatter(empi_prob, data_in, marker='o', s=8, c='red', edgecolors='k', label='经验概率数据点')
+        ax.scatter(empi_prob, data_in_sorted, marker='o', s=8, c='red', edgecolors='k', label='经验概率数据点')
         ax.plot(sample_x, sample_y, '--', lw=1, label=method_name + '分布拟合曲线')
         ax.legend(prop=font)
 
         save_path = self.img_path + '/{}_{}.png'.format(y_axis_name, method_name)
-        plt.savefig(save_path, dpi=200, format='png', bbox_inches='tight')
-
-        # 关闭图框
+        plt.savefig(save_path, dpi=300, format='png', bbox_inches='tight')
         plt.cla()
 
         return save_path

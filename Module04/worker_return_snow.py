@@ -37,6 +37,7 @@ class workerReturnSnow:
 
         # 1.读取json中的信息
         data_json = json.loads(json_str)
+        element = data_json.get('element', 'snow')
         years = data_json['years']
         main_station = data_json['main_station']  # 参证站
         return_period_flag = data_json['return_period_flag']  # 重现期/频率 0 or 1
@@ -75,8 +76,11 @@ class workerReturnSnow:
         return_years.sort() # 排序
 
         # 2.拼接需要下载的参数
-        monthly_elements = 'Snow_Depth_Max'
-
+        if element == 'snow':
+            monthly_elements = 'Snow_Depth_Max'
+        elif element == 'frs':
+            monthly_elements = 'FRS_Depth_Max'
+        
         # 4.数据获取
         if cfg.INFO.READ_LOCAL:
             month_eles = ('Station_Name,Station_Id_C,Lat,Lon,Datetime,Year,Mon,' + monthly_elements).split(',')
@@ -95,19 +99,24 @@ class workerReturnSnow:
         yearly_df = monthly_df.resample('1A').max()
 
         try:
-            snow = calc_return_period_snow(yearly_df, return_years, CI, fitting_method, data_dir)
-            snow_result = snow.run()
+            calc = calc_return_period_snow(yearly_df, return_years, CI, fitting_method, data_dir, element)
+
+            if element == 'snow':
+                snow_result = calc.run_snow()
+            elif element == 'frs':
+                snow_result = calc.run_frs()
             snow_result['uuid'] = uuid4
 
             try:
-                if len(fitting_method)==2:              
-                    report_path = re_snow_report(snow_result,yearly_df,data_dir)
-                    report_path = report_path.replace(cfg.INFO.IN_DATA_DIR, cfg.INFO.OUT_DATA_DIR)
-                    snow_result['report'] = report_path.replace(cfg.INFO.OUT_DATA_DIR, cfg.INFO.OUT_DATA_URL)
-                else:
-                    report_path = re_snow_report_pg(snow_result,yearly_df,fitting_method[0],data_dir)
-                    report_path = report_path.replace(cfg.INFO.IN_DATA_DIR, cfg.INFO.OUT_DATA_DIR)
-                    snow_result['report'] = report_path.replace(cfg.INFO.OUT_DATA_DIR, cfg.INFO.OUT_DATA_URL)
+                if element == 'snow':
+                    if len(fitting_method)==2:              
+                        report_path = re_snow_report(snow_result,yearly_df,data_dir)
+                        report_path = report_path.replace(cfg.INFO.IN_DATA_DIR, cfg.INFO.OUT_DATA_DIR)
+                        snow_result['report'] = report_path.replace(cfg.INFO.OUT_DATA_DIR, cfg.INFO.OUT_DATA_URL)
+                    else:
+                        report_path = re_snow_report_pg(snow_result,yearly_df,fitting_method[0],data_dir)
+                        report_path = report_path.replace(cfg.INFO.IN_DATA_DIR, cfg.INFO.OUT_DATA_DIR)
+                        snow_result['report'] = report_path.replace(cfg.INFO.OUT_DATA_DIR, cfg.INFO.OUT_DATA_URL)
                     
             except Exception as e:
                 print(f"雪重现期报告 发生了错误：{e}")
