@@ -69,7 +69,7 @@ def get_cmadaas_monthly_data(years, elements, sta_ids):
         '''
         time_range, elements, sta_ids = vals
         data_code = 'SURF_CHN_MUL_MON'
-        default_elements = 'Station_Id_C,Station_Name,Datetime,Lon,Lat'
+        default_elements = 'Station_Id_C,Station_Name,Datetime'
         all_elements = default_elements + ',' + elements
         ranges = None
         df = cmadaas_obs_by_time_range_and_id(time_range=time_range, data_code=data_code, elements=all_elements, ranges=ranges, sta_ids=sta_ids)

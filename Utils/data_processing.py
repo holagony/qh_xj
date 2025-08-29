@@ -294,9 +294,9 @@ def monthly_data_processing(monthly_data, years):
         
         # 填充
         fillna_values = {'Station_Id_C': df_sta.loc[df_sta['Station_Id_C'].notnull(), 'Station_Id_C'][0],
-                         'Station_Name': df_sta.loc[df_sta['Station_Name'].notnull(), 'Station_Name'][0],
-                         'Lon': df_sta.loc[df_sta['Lon'].notnull(), 'Lon'][0],
-                         'Lat': df_sta.loc[df_sta['Lat'].notnull(), 'Lat'][0]}
+                         'Station_Name': df_sta.loc[df_sta['Station_Name'].notnull(), 'Station_Name'][0]}
+                        #  'Lon': df_sta.loc[df_sta['Lon'].notnull(), 'Lon'][0],
+                        #  'Lat': df_sta.loc[df_sta['Lat'].notnull(), 'Lat'][0]}
         df_sta = df_sta.fillna(fillna_values)
         df_sta['Year'] = df_sta.index.year
         df_sta['Mon'] = df_sta.index.month
@@ -383,9 +383,6 @@ def monthly_data_processing(monthly_data, years):
     
     if 'RHU_Min' in df_data.columns:
         df_data['RHU_Min'] = df_data['RHU_Min'].apply(lambda x: np.nan if x > 100 else x)
-    
-    if 'TEM_Avg' in df_data.columns:
-        df_data['TEM_Avg'] = df_data['TEM_Avg'].apply(lambda x: np.nan if x > 999 else x)
 
     return df_data
 
@@ -447,13 +444,13 @@ def daily_data_processing(daily_data, years):
         df_data['PRE_Time_2020'] = df_data['PRE_Time_2020'].map(float)
     
     if 'PRS_Avg' in df_data.columns:
-        df_data['PRS_Avg'] = df_data['PRS_Avg'].apply(lambda x: np.nan if x > 999 else x)
+        df_data['PRS_Avg'] = df_data['PRS_Avg'].apply(lambda x: np.nan if (x > 1100 or x < 550) else x)
     
     if 'PRS_Max' in df_data.columns:
-        df_data['PRS_Max'] = df_data['PRS_Max'].apply(lambda x: np.nan if x > 999 else x)
+        df_data['PRS_Max'] = df_data['PRS_Max'].apply(lambda x: np.nan if (x > 1100 or x < 550) else x)
     
     if 'PRS_Min' in df_data.columns:
-        df_data['PRS_Min'] = df_data['PRS_Min'].apply(lambda x: np.nan if x > 999 else x)
+        df_data['PRS_Min'] = df_data['PRS_Min'].apply(lambda x: np.nan if (x > 1100 or x < 550) else x)
     
     if 'TEM_Avg' in df_data.columns:
         df_data['TEM_Avg'] = df_data['TEM_Avg'].apply(lambda x: np.nan if x > 999 else x)
@@ -493,6 +490,21 @@ def daily_data_processing(daily_data, years):
         
     if 'Snow_Depth' in df_data.columns:
         df_data['Snow_Depth'] = df_data['Snow_Depth'].apply(lambda x: np.nan if x > 999 else x)   
+        
+    if 'SSH' in df_data.columns:
+        df_data.loc[df_data['SSH'] > 24, 'SSH'] = np.nan  
+            
+    if 'FRS_1st_Top' in df_data.columns:
+        df_data['FRS_1st_Top'] = df_data['FRS_1st_Top'].apply(lambda x: np.nan if x > 1000 else x)   
+        
+    if 'FRS_1st_Bot' in df_data.columns:
+        df_data['FRS_1st_Bot'] = df_data['FRS_1st_Bot'].apply(lambda x: np.nan if x > 1000 else x)   
+        
+    if 'FRS_2nd_Top' in df_data.columns:
+        df_data['FRS_2nd_Top'] = df_data['FRS_2nd_Top'].apply(lambda x: np.nan if x > 1000 else x)   
+        
+    if 'FRS_2nd_Bot' in df_data.columns:
+        df_data['FRS_2nd_Bot'] = df_data['FRS_2nd_Bot'].apply(lambda x: np.nan if x > 1000 else x)   
 
     return df_data
 
@@ -560,9 +572,6 @@ def hourly_data_processing(hourly_data, years):
 
     if 'RHU' in df_data.columns:
         df_data['RHU'] = df_data['RHU'].apply(lambda x: np.nan if x > 100 else x)
-    
-    if 'TEM' in df_data.columns:
-        df_data['TEM'] = df_data['TEM'].apply(lambda x: np.nan if x > 999 else x)
         
     # 处理为世界时
     df_data.index += pd.Timedelta(hours=8)
