@@ -54,21 +54,28 @@ RUN wget --quiet https://mirrors.tuna.tsinghua.edu.cn/anaconda/miniconda/Minicon
 # make non-activate conda commands available
 ENV PATH=$CONDA_DIR/bin:$PATH
 
-WORKDIR $APP_DIR
 
-# pip换源
-RUN PIP_EXISTS_ACTION=w pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple/ \
-    && PIP_EXISTS_ACTION=w pip config set install.trusted-host pypi.tuna.tsinghua.edu.cn
-
-# build the conda environment
-RUN eval "$(conda shell.bash hook)" \
+# 配置conda并构建环境（合并所有操作以减少镜像层数）
+RUN conda init bash \
+    && conda config --add channels pytorch \
+    && conda config --add channels conda-forge \
+    && conda config --set remote_read_timeout_secs 1000.0 \
+    && conda config --set remote_connect_timeout_secs 40 \
+    && conda config --set show_channel_urls yes \
+    && conda config --set channel_priority strict \
     && conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/main \
     && conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/r \
-    && conda create -n myconda python=3.11 \
+    && eval "$(conda shell.bash hook)" \
+    && conda env create -n myconda --file /tmp/environment.yaml \
     && conda activate myconda \
-    && conda env update -n myconda --file /tmp/environment.yaml \
-    && conda clean -p \
-    && conda clean -t
+    && PIP_EXISTS_ACTION=w pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple/ \
+    && PIP_EXISTS_ACTION=w pip config set install.trusted-host pypi.tuna.tsinghua.edu.cn \
+    && conda clean --all --yes \
+    && pip cache purge \
+    && rm -rf $CONDA_DIR/pkgs/* \
+    && rm -rf /tmp/environment.yaml
+
+WORKDIR $APP_DIR
 
 # RUN PIP_EXISTS_ACTION=w conda clean -i && conda env create -n road --file /tmp/environment.yml --force \
 #     && conda clean --all --yes \
