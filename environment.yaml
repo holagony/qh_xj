@@ -23,6 +23,7 @@ dependencies:
   - docxcompose
   - jenkspy
   - flower
+  - xlrd
   - pip:
     - nmc-met-io
     - probscale
