@@ -54,19 +54,6 @@ RUN wget --quiet https://mirrors.tuna.tsinghua.edu.cn/anaconda/miniconda/Minicon
 # make non-activate conda commands available
 ENV PATH=$CONDA_DIR/bin:$PATH
 
-# make conda activate command available from /bin/bash --interative shells
-RUN conda init bash
-RUN conda config --add channels pytorch \
-    && conda config --add channels conda-forge \
-    && conda config --set remote_read_timeout_secs 1000.0 \
-    && conda config --set remote_connect_timeout_secs 40 \
-    && conda config --set show_channel_urls yes \
-    && conda config --show \
-    && echo "before update: $(conda --version)" \
-    && conda update conda \
-    && conda update --all \
-    && echo "updated: $(conda --version)"
-
 WORKDIR $APP_DIR
 
 # pip换源
@@ -74,9 +61,10 @@ RUN PIP_EXISTS_ACTION=w pip config set global.index-url https://pypi.tuna.tsingh
     && PIP_EXISTS_ACTION=w pip config set install.trusted-host pypi.tuna.tsinghua.edu.cn
 
 # build the conda environment
-RUN conda create -n myconda python=3.11 \
-    && conda init bash \
-    && source activate \
+RUN eval "$(conda shell.bash hook)" \
+    && conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/main \
+    && conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/r \
+    && conda create -n myconda python=3.11 \
     && conda activate myconda \
     && conda env update -n myconda --file /tmp/environment.yaml \
     && conda clean -p \
