@@ -25,9 +25,9 @@ if flag == 'HX': # 公司服务器
     __C.INFO.IN_DATA_DIR = '/data' # 容器内保存文件夹
     __C.INFO.OUT_DATA_DIR = '/home/bgdb/dockercp/qhkxxlz/data' # 容器外挂载保存文件夹
     __C.INFO.OUT_DATA_URL = 'http://1.119.169.101:10036/img'
-    __C.INFO.REDIS_HOST = '172.17.0.2'
-    __C.INFO.REDIS_PORT = '6379'
-    __C.INFO.REDIS_PWD = 'qhkxxlz123..!@'
+    __C.INFO.REDIS_HOST = '192.168.1.119'
+    __C.INFO.REDIS_PORT = '8086'
+    __C.INFO.REDIS_PWD = 'hC%34okFq&'
     __C.INFO.DB_USER = 'postgres'
     __C.INFO.DB_PWD = '2023p+yuiL34gf+hx+##!!'
     __C.INFO.DB_HOST = '192.168.1.122' # 内网
