@@ -64,7 +64,7 @@ def wind_stats5(data_dict, img_path):
 
 
 if __name__ == '__main__':
-    df = get_data_postgresql(sta_id='QH001', time_range='20230801,20240831')
+    df = get_data_postgresql(sta_id='XJ_dabancheng', time_range='20220701,20230731')
     after_process = wind_tower_processing(df)
-    save_path = r'C:/Users/MJY/Desktop/result'
+    save_path = r'C:/Users/mjynj/Desktop'
     result = wind_stats5(after_process, save_path)

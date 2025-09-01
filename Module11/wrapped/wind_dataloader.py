@@ -125,13 +125,14 @@ def get_data_postgresql(sta_id, time_range):
     # 读取
     conn = psycopg2.connect(database=cfg.INFO.DB_NAME, user=cfg.INFO.DB_USER, password=cfg.INFO.DB_PWD, host=cfg.INFO.DB_HOST, port=cfg.INFO.DB_PORT)
     cur = conn.cursor()
-    query = sql.SQL("SELECT DISTINCT * From public.qhkxxlz_wind_tower WHERE station_id in %s AND datetime >= %s AND datetime <= %s")
+    # 优化：只选择实际需要的列
+    query = sql.SQL("SELECT DISTINCT station_id, datetime, height_level, height, wd_10min, ws_10min, ws_max, ws_inst_max FROM public.qhkxxlz_wind_tower WHERE station_id in %s AND datetime >= %s AND datetime <= %s")
     cur.execute(query, (sta_id, start, end))
     data = cur.fetchall()
     df = pd.DataFrame(data)
-    df.columns = ['station_id', 'lon', 'lat', 'datetime', '高度层', '对应高度', '10分风向', '10分风速', '2分风向', '2分风速', '最大风向', '最大风速', '极大风向', '极大风速', '瞬时风向', '瞬时风速']
+    # 更新列名以匹配优化后的查询
+    df.columns = ['station_id', 'datetime', '高度层', '对应高度', '10分风向', '10分风速', '最大风速', '极大风速']
     df = df[['station_id', 'datetime', '对应高度', '10分风向', '10分风速', '最大风速', '极大风速']]
-    # df = df.drop_duplicates()
     cur.close()
     conn.close()
 

@@ -35,7 +35,7 @@ if flag == 'HX': # 公司服务器
     __C.INFO.DB_NAME = 'postgres'
     __C.INFO.SCHEMA_NAME = 'public'
     __C.INFO.READ_LOCAL = True
-    __C.INFO.SAVE_RESULT = False
+    __C.INFO.SAVE_RESULT = True
     __C.INFO.TILE_PATH = os.path.join(data_file_dir, 'mapbox_tile/')
 
 elif flag == 'LOCAL': # 自己电脑
@@ -54,10 +54,10 @@ elif flag == 'LOCAL': # 自己电脑
     __C.INFO.DB_NAME = 'postgres'
     __C.INFO.SCHEMA_NAME = 'public'
     __C.INFO.READ_LOCAL = True
-    __C.INFO.SAVE_RESULT = False
+    __C.INFO.SAVE_RESULT = True
     __C.INFO.TILE_PATH = os.path.join(data_file_dir, 'mapbox_tile\\')
 
-elif flag == 'QH': # 青海服务器 XJ
+elif flag == 'XJ': # 新疆
     __C.INFO.IN_UPLOAD_FILE = '/zipdata'
     __C.INFO.OUT_UPLOAD_FILE = 'E:/hxkj/xinjiang/zipdata'
     __C.INFO.IN_DATA_DIR = '/data' # 容器内保存文件夹
@@ -73,7 +73,7 @@ elif flag == 'QH': # 青海服务器 XJ
     __C.INFO.DB_NAME = 'postgres'
     __C.INFO.SCHEMA_NAME = 'public'
     __C.INFO.READ_LOCAL = False
-    __C.INFO.SAVE_RESULT = False
+    __C.INFO.SAVE_RESULT = True
     __C.INFO.TILE_PATH = os.path.join(data_file_dir, 'mapbox_tile\\') # 容器内地址
 
 # 静态文件路径

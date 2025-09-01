@@ -4,7 +4,8 @@ import pandas as pd
 from Utils.config import cfg
 from Utils.ordered_easydict import OrderedEasyDict as edict
 from Module11.wrapped.wind_dataloader import get_data_postgresql, wind_tower_processing
-from Utils.data_processing import daily_data_processing
+from Utils.get_local_data import get_local_data
+
 
 
 def wind_stats3(data_dict, df_sta, input_ws, output_ws):
@@ -56,7 +57,7 @@ def wind_stats3(data_dict, df_sta, input_ws, output_ws):
         #     rho_trans = None
 
         # 2.逐月平均风速
-        ws_monthly = ws_df.resample('1M').mean().round(2)
+        ws_monthly = ws_df.resample('1M').mean().round(1)
         ws_monthly.columns = [col.split('_')[0] for col in ws_monthly.columns]
         ws_monthly.insert(loc=0, column='时间', value=ws_monthly.index.strftime('%Y-%m'))
         ws_monthly.reset_index(drop=True, inplace=True)
@@ -86,7 +87,7 @@ def wind_stats3(data_dict, df_sta, input_ws, output_ws):
         # 5.平均风速日变化
         ws_hourly_accum = []
         for i in range(0, 24):
-            hour_i_mean = ws_df[ws_df.index.hour == i].mean().round(2)
+            hour_i_mean = ws_df[ws_df.index.hour == i].mean().round(1)
             ws_hourly_accum.append(hour_i_mean)
 
         ws_hourly_accum = pd.DataFrame(ws_hourly_accum).T
@@ -118,7 +119,7 @@ def wind_stats3(data_dict, df_sta, input_ws, output_ws):
             mask_pd_hourly_accum.reset_index(drop=True, inplace=True)
 
         # 8.综合参数统计
-        ratio = ws_df.apply(lambda x: round(len(x[(x > input_ws) & (x < output_ws)]) / len(x) * 100, 2))  # 3-25m/s百分率
+        ratio = ws_df.apply(lambda x: round(len(x[(x > input_ws) & (x < output_ws)]) / len(x) * 100, 1))  # 3-25m/s百分率
         ratio = ratio.to_frame().reset_index(drop=True)
         ratio.columns = ['有效风速小时数百分率%']
 
@@ -165,9 +166,9 @@ def wind_stats3(data_dict, df_sta, input_ws, output_ws):
 
 if __name__ == '__main__':
     daily_df = pd.read_csv(cfg.FILES.QH_DATA_DAY)
-    post_daily_df = daily_data_processing(daily_df)
-    post_daily_df = post_daily_df[post_daily_df['Station_Id_C'] == '52866']
-    post_daily_df = post_daily_df[['TEM_Avg', 'PRS_Avg']]
+    day_eles = ('Station_Id_C,Station_Name,Lat,Lon,Datetime,Year,Mon,Day,' + 'TEM_Avg,PRS_Avg').split(',')
+    years = '2010,2020'
+    post_daily_df = get_local_data(daily_df, '52866', day_eles, years, 'Day')
     
     df = get_data_postgresql(sta_id='XJ_dabancheng', time_range='20220701,20230731')
     after_process = wind_tower_processing(df)

@@ -5,6 +5,7 @@ from Utils.config import cfg
 from Utils.ordered_easydict import OrderedEasyDict as edict
 from Module11.wrapped.wind_dataloader import get_data_postgresql, wind_tower_processing
 from Utils.data_processing import wind_direction_to_symbol, daily_data_processing
+from Utils.get_local_data import get_local_data
 
 
 def wind_stats4(data_dict, df_sta, input_ws, output_ws):
@@ -21,7 +22,7 @@ def wind_stats4(data_dict, df_sta, input_ws, output_ws):
 
     for sta, sub_dict in data_dict.items():
         ws_df = sub_dict['ws_10'].filter(like='m_hour_ws')
-        wd_df = sub_dict['wd_10'].filter(like='m_hour_wd')
+        wd_df = sub_dict['wd_10'].filter(like='m_hour_wd').round(0)
         wd_df = wd_df.copy()
 
         # 1.风向频率
@@ -48,7 +49,7 @@ def wind_stats4(data_dict, df_sta, input_ws, output_ws):
         # 计算不同高度风速对应的小时风能密度(t=1)
         wind_pd = (1 / 2) * new_rho * (ws_df**3)
 
-        # 对每个高度，统计不同风向下的风能`密度之和
+        # 对每个高度，统计不同风向下的风能密度之和
         for i in range(len(wind_heights)):
             h = wind_heights[i]
             concat = pd.concat([wd_df.iloc[:, i], wind_pd.iloc[:, i]], axis=1)
@@ -140,11 +141,10 @@ def wind_stats4(data_dict, df_sta, input_ws, output_ws):
 
 if __name__ == '__main__':
     daily_df = pd.read_csv(cfg.FILES.QH_DATA_DAY)
-    post_daily_df = daily_data_processing(daily_df)
+    day_eles = ('Station_Id_C,Station_Name,Lat,Lon,Datetime,Year,Mon,Day,' + 'TEM_Avg,PRS_Avg').split(',')
+    years = '2010,2020'
+    post_daily_df = get_local_data(daily_df, '52866', day_eles, years, 'Day')
     
-    post_daily_df = post_daily_df[post_daily_df['Station_Id_C'] == '52866']
-    post_daily_df = post_daily_df[['TEM_Avg', 'PRS_Avg']]
-    
-    df = get_data_postgresql(sta_id='QH001', time_range='20230801,20240630')
+    df = get_data_postgresql(sta_id='XJ_dabancheng', time_range='20220701,20230731')
     after_process = wind_tower_processing(df)
     result = wind_stats4(after_process, post_daily_df, 3, 25)
