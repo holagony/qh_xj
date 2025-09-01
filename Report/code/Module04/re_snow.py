@@ -245,9 +245,9 @@ def re_snow_report_pg(snow_result,year_df,methods,data_dir):
     
     return report
 
-if __name__ == '__main__':
-    year_df=df_sequence
-    data_dir=r'D:\Project\3_项目\2_气候评估和气候可行性论证\qhkxxlz\Report\report\Module04'
+# if __name__ == '__main__':
+#     year_df=df_sequence
+#     data_dir=r'D:\Project\3_项目\2_气候评估和气候可行性论证\qhkxxlz\Report\report\Module04'
 
-    methods=fitting_method[0]
-    report=re_snow_report_pg(snow_result,year_df,methods,data_dir)
+#     methods=fitting_method[0]
+#     report=re_snow_report_pg(snow_result,year_df,methods,data_dir)

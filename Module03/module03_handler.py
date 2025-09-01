@@ -1182,7 +1182,24 @@ if __name__=='__main__':
     data_json['years']="1970,2023"
     data_json['sub_sta_ids']=["56151"]
     data_json['main_sta_ids']="56067"
-    data_json['elements']=['PRE_Time_2020',"Snow",'GSS','Hail_Days']
+    data_json['elements']=[
+  "PRE_Days",
+  "Hail_Days",
+  "Fog_Days",
+  "Mist_Days",
+  "Glaze_Days",
+  "SoRi_Days",
+  "Tord_Days",
+  "SaSt_Days",
+  "FlSa_Days",
+  "FlDu_Days",
+  "Haze_Days",
+  "GaWIN_Days",
+  "Squa",
+  "Lit",
+  "DuWhr",
+  "DrSnow"
+]
     
     result = weather_phenomena_days(data_json)
     
