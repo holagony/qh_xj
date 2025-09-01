@@ -240,7 +240,7 @@ class calc_return_period_snow:
         
         snow_data_save = snow_data.to_frame().copy()
         snow_data_save.insert(loc=0, column='year', value=snow_data_save.index.year)
-        snow_data_save.columns = ['年份','最大冻土深度(cm)']
+        snow_data_save.columns = ['年份','最大积雪深度(cm)']
         snow_data_save.reset_index(drop=True, inplace=True)
         result_dict.data = snow_data_save.to_dict(orient='records')
     
@@ -308,7 +308,7 @@ class calc_return_period_snow:
         
         frs_data_save = frs_data.to_frame().copy()
         frs_data_save.insert(loc=0, column='year', value=frs_data_save.index.year)
-        frs_data_save.columns = ['年份','最大积雪深度(cm)']
+        frs_data_save.columns = ['年份','最大冻土深度(cm)']
         frs_data_save.reset_index(drop=True, inplace=True)
         result_dict.data = frs_data_save.to_dict(orient='records')
             
