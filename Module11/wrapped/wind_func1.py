@@ -86,6 +86,6 @@ def wind_stats1(data_dict, time_range):
 
 
 if __name__ == '__main__':
-    df = get_data_postgresql(sta_id='QH001', time_range='20230801,20240630')
+    df = get_data_postgresql(sta_id='XJ_dabancheng', time_range='20220701,20230731')
     after_process = wind_tower_processing(df)
-    check_result1 = wind_stats1(after_process, time_range='20220801,20240830')
+    check_result1 = wind_stats1(after_process, time_range='20220701,20230731')

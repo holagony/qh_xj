@@ -12,7 +12,7 @@ data_file_dir = os.path.join(current_obj, 'Files')
 # 生成字典
 __C = edict()
 cfg = __C
-flag = 'QH'
+flag = 'HX'
 
 # 信息配置
 __C.INFO = edict()
@@ -39,10 +39,10 @@ if flag == 'HX': # 公司服务器
     __C.INFO.TILE_PATH = os.path.join(data_file_dir, 'mapbox_tile/')
 
 elif flag == 'LOCAL': # 自己电脑
-    __C.INFO.IN_UPLOAD_FILE = 'C:/Users/MJY/Desktop/qhkxxlz/zipdata'  # 上传数据路径
-    __C.INFO.OUT_UPLOAD_FILE = 'C:/Users/MJY/Desktop/qhkxxlz/zipdata'
+    __C.INFO.IN_UPLOAD_FILE = 'C:/Users/mjynj/Desktop/qh_xj/zipdata'  # 上传数据路径
+    __C.INFO.OUT_UPLOAD_FILE = 'C:/Users/mjynj/Desktop/qh_xj/zipdata'
     __C.INFO.IN_DATA_DIR = '/data'  # 容器内保存文件夹
-    __C.INFO.OUT_DATA_DIR = 'C:/Users/MJY/Desktop/qhkxxlz/data'  # 容器外挂载保存文件夹
+    __C.INFO.OUT_DATA_DIR = 'C:/Users/mjynj/Desktop/qh_xj/data'  # 容器外挂载保存文件夹
     __C.INFO.OUT_DATA_URL = 'http://1.119.169.101:10036/img'
     __C.INFO.REDIS_HOST = '172.17.0.2'
     __C.INFO.REDIS_PORT = '6379'

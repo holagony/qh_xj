@@ -169,6 +169,6 @@ if __name__ == '__main__':
     post_daily_df = post_daily_df[post_daily_df['Station_Id_C'] == '52866']
     post_daily_df = post_daily_df[['TEM_Avg', 'PRS_Avg']]
     
-    df = get_data_postgresql(sta_id='QH001', time_range='20230801,20240630')
+    df = get_data_postgresql(sta_id='XJ_dabancheng', time_range='20220701,20230731')
     after_process = wind_tower_processing(df)
     result = wind_stats3(after_process, post_daily_df, 3, 25)

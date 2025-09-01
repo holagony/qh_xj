@@ -13,7 +13,7 @@ from Utils.data_loader import get_connection
 from Utils.my_server import get_server_sshtunnel
 
 
-def wind_tower_upload(paths, sta_id, lon, lat):
+def wind_tower_upload(paths, sta_id, lon=None, lat=None):
     '''
     读取测风塔数据文件夹，处理数据，入库
     paths: 测风塔数据文件夹，格式为样例数据形式
@@ -21,6 +21,11 @@ def wind_tower_upload(paths, sta_id, lon, lat):
     lon: 定义的经度
     lat: 定义的纬度
     '''
+    if lon is None:
+        lon = np.nan
+    if lat is None:
+        lat = np.nan
+
     total_path = glob.glob(os.path.join(paths, '*.xls'))
     df_all = []
     for path in total_path:
@@ -170,16 +175,21 @@ def wind_tower_processing(df):
         ws_max = wind.filter(like='ws_max')
         ws_max_inst = wind.filter(like='ws_inst_max')
 
-        after_process[sta].ws_10 = ws_10
-        after_process[sta].wd_10 = wd_10
-        after_process[sta].ws_max = ws_max
-        after_process[sta].ws_max_inst = ws_max_inst
+        after_process[sta].ws_10 = ws_10.resample('1H').mean()
+        after_process[sta].wd_10 = wd_10.resample('1H').mean()
+        after_process[sta].ws_max = ws_max.resample('1H').max()
+        after_process[sta].ws_max_inst = ws_max_inst.resample('1H').max()
 
         return after_process
 
 
 if __name__ == '__main__':
-    # wind_tower_upload(paths=cfg.FILES.WIND_TOWER, sta_id='QH009', lon=94.9, lat=36.4167) # 上传
-    # set_data_heights(cur_val="2", new_val='12', sta_id='QH009') # 更新数据库里面的高度
-    df = get_data_postgresql(sta_id='QH001', time_range='20230801,20240630')  # 数据库获取
+    path = r'C:\Users\mjynj\Desktop\dacheng\dacheng'
+    wind_tower_upload(paths=path, sta_id='XJ_dabancheng') # 上传
+    
+    # In[] 修改高度
+    set_data_heights(cur_val="4", new_val='100', sta_id='XJ_dabancheng') # 更新数据库里面的高度
+    
+    # In[] # 数据库获取
+    df = get_data_postgresql(sta_id='XJ_dabancheng', time_range='20220701,20230731')
     after_process = wind_tower_processing(df)  # 获取后处理
