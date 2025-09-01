@@ -173,8 +173,13 @@ def spatial_consistency_report(result_dict,main_sta_ids,sub_sta_ids,data_dir):
             plt.grid(axis='y', linestyle='--', alpha=0.7)    
             plt.xlabel('月份')
             plt.ylabel(dic['ele']+'（'+dic['ele_unit']+'）')
-            plt.legend(loc='upper left', fontsize='small')
+            plt.legend(loc='upper center', bbox_to_anchor=(0.5, 1.08), ncol=len(data.columns), fontsize='small')
         
+            y_min, y_max = data.min().min(), data.max().max()
+            y_range = y_max - y_min
+            margin = y_range * 0.05 if y_range > 0 else 0.1
+            plt.ylim(y_min - margin, y_max + margin)
+
             average_gst_picture_hournum=os.path.join(data_dir,dic['ele']+'.png')
             plt.savefig(average_gst_picture_hournum, bbox_inches='tight', dpi=200)
             plt.clf()
