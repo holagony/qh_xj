@@ -92,7 +92,7 @@ def sample(x):
             max_accum = []
             tmp = x[ele]
             for i in range(1, 13):
-                month_i_max = tmp[tmp.index.month == i].max().round(1)
+                month_i_max = np.round(tmp[tmp.index.month == i].max(),1)
                 max_accum.append(month_i_max)
             all_dict[ele] = max_accum
         
@@ -100,7 +100,7 @@ def sample(x):
             min_accum = []
             tmp = x[ele]
             for i in range(1, 13):
-                month_i_min = tmp[tmp.index.month == i].min().round(1)
+                month_i_min =  np.round(tmp[tmp.index.month == i].min(),1)
                 min_accum.append(month_i_min)
             all_dict[ele] = min_accum
         
@@ -108,7 +108,7 @@ def sample(x):
             sum_accum = []
             tmp = x[ele]
             for i in range(1, 13):
-                month_i_sum = tmp[tmp.index.month == i].sum().round(1)
+                month_i_sum =  np.round(tmp[tmp.index.month == i].sum(),1)
                 sum_accum.append(month_i_sum)
             all_dict[ele] = sum_accum
 
