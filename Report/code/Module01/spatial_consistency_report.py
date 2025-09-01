@@ -82,7 +82,7 @@ unit = {'平均气压': 'hPa',
                 '平均风速': 'm/s', 
                 '最大风速': 'm/s'}
     
-# data_dir=r'D:\Project\3_项目\2_气候评估和气候可行性论证\qhkxxlz\Report\report\Module01'
+# data_dir=r'D:\Project\3_项目\13_新疆气候可行性论证\Data\data'
 def spatial_consistency_report(result_dict,main_sta_ids,sub_sta_ids,data_dir):
     
     num=0
@@ -196,7 +196,7 @@ def spatial_consistency_report(result_dict,main_sta_ids,sub_sta_ids,data_dir):
             document = Document(report)
             
             # 填充表格数据
-            mean_tem_x=mean_tem.iloc[:,3:-1]
+            mean_tem_x=mean_tem.iloc[:,1:-1]
             name='周边气象站月'+dic['ele']+'分布（单位：'+dic['ele_unit']+'）'
             creat_table(document,mean_tem_x,name)
         
