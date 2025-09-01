@@ -16,6 +16,7 @@ from Utils.get_local_data import get_local_data
 from Module00.wrapped.check import check
 from Module04.wrapped.return_period_snow import calc_return_period_snow
 from Report.code.Module04.re_snow import re_snow_report,re_snow_report_pg
+from Report.code.Module04.re_frs import re_frs_report,re_frs_report_pg
 from Utils.get_url_path import save_cmadaas_data
 
 
@@ -117,9 +118,19 @@ class workerReturnSnow:
                         report_path = re_snow_report_pg(snow_result,yearly_df,fitting_method[0],data_dir)
                         report_path = report_path.replace(cfg.INFO.IN_DATA_DIR, cfg.INFO.OUT_DATA_DIR)
                         snow_result['report'] = report_path.replace(cfg.INFO.OUT_DATA_DIR, cfg.INFO.OUT_DATA_URL)
+                        
+                elif element == 'frs':
+                    if len(fitting_method)==2:              
+                        report_path = re_frs_report(snow_result,yearly_df,data_dir)
+                        report_path = report_path.replace(cfg.INFO.IN_DATA_DIR, cfg.INFO.OUT_DATA_DIR)
+                        snow_result['report'] = report_path.replace(cfg.INFO.OUT_DATA_DIR, cfg.INFO.OUT_DATA_URL)
+                    else:
+                        report_path = re_frs_report_pg(snow_result,yearly_df,fitting_method[0],data_dir)
+                        report_path = report_path.replace(cfg.INFO.IN_DATA_DIR, cfg.INFO.OUT_DATA_DIR)
+                        snow_result['report'] = report_path.replace(cfg.INFO.OUT_DATA_DIR, cfg.INFO.OUT_DATA_URL)
                     
             except Exception as e:
-                print(f"雪重现期报告 发生了错误：{e}")
+                print(f"{element}:重现期报告 发生了错误：{e}")
                 snow_result['report'] = None
 
             # url替换
@@ -156,3 +167,45 @@ class workerReturnSnow:
         #     pickle.dump(return_data, f)
 
         return return_data
+
+
+if __name__ == '__main__':
+    
+    data_json={
+      "element":'frs',
+      "years": "2000,2020",
+      "main_station": "52874",
+      "staValueName": [
+        "青海省",
+        "海东市",
+        "乐都区",
+        "52874"
+      ],
+      "stationName": "[52874]乐都",
+      "staValue": "国家站",
+      "return_period_flag": 0,
+      "return_period": [
+        2,
+        3,
+        5,
+        10,
+        20,
+        30,
+        50,
+        100
+      ],
+      "CI": [],
+      "fitting_method": [
+        "Gumbel",
+        "P3"
+      ],
+      "fmethod": [
+        "耿贝尔法",
+        "皮尔逊Ⅲ型"
+      ],
+      "checkeddMethod": "重现期",
+      "checkedEle": [
+        "气压",
+        "风速"
+      ]
+    }
