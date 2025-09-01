@@ -178,7 +178,7 @@ def plot_picture_2(x, y, dic, namelabel, namedic1, namedic2, namepng, num1, num2
     # if num1 != 100:
     #     ax.set_ylim(dic[namedic1] - num1, dic[namedic2] + num2)
 
-    y_min, y_max = dic[namedic1].min(), dic[namedic2].max()
+    y_min, y_max = np.min(dic[namedic1]), np.min(dic[namedic2])
     y_range = y_max - y_min
     margin = y_range * 0.05 if y_range > 0 else 0.1
     ax.set_ylim(y_min - margin, y_max + margin)
