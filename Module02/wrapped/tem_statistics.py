@@ -33,7 +33,7 @@ def basic_tem_statistics(tem_day, tem_month, data_dir):
         basic_tem_yearly = pd.concat([avg_tem_info,max_tem_info,min_tem_info], axis=1)
         basic_tem_yearly.insert(loc=0, column='年份', value=basic_tem_yearly.index)
         basic_tem_yearly.reset_index(drop=True, inplace=True)
-        basic_tem_yearly.columns = ['年份', '平均气温(°C)', '最高气温(°C)', '最高气温出现日期', '最低气温(°C)', '最低气温出现日期']
+        basic_tem_yearly.columns = ['年份', '平均气温(°C)', '极端最高气温(°C)', '极端最高气温出现日期', '极端最低气温(°C)', '极端最低气温出现日期']
         basic_tem_yearly = basic_tem_yearly.to_dict(orient='records')
 
     except Exception as e:
