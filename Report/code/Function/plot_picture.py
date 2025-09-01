@@ -58,41 +58,84 @@ def plot_picture(df, namex, namey, namelable, unit, namepng, num1, num2, data_di
     plt.tick_params(axis='both', direction='in')
     plt.xlabel('年')
     plt.ylabel(namelable)
-    # 使用有效数据设置坐标轴范围和刻度（每2年一个刻度）
     year_min = valid_years.min()
     year_max = valid_years.max()
-    # 生成每2年的刻度
-    xtick_years = np.arange(year_min, year_max + 1, 2)
+    # 生成约10个刻度
+    num_ticks = 10
+    step = max(1, int((year_max - year_min) / (num_ticks - 1)))
+    xtick_years = np.arange(year_min, year_max + 1, step)
     plt.xticks(xtick_years)
     plt.xlim(np.min(valid_years), np.max(valid_years))
-    if num1 != 100:
-        plt.ylim(valid_gstperatures.min() - num1, valid_gstperatures.max() + num2)
+    # if num1 != 100:
+    #     plt.ylim(valid_gstperatures.min() - num1, valid_gstperatures.max() + num2)
+    y_min, y_max = valid_gstperatures.min(), valid_gstperatures.max()
+    y_range = y_max - y_min
+    margin = y_range * 0.05 if y_range > 0 else 0.1
+    plt.ylim(y_min - margin, y_max + margin)
     # plt.legend()
 
     # 创建文本标注
-    # texts = []
+    texts = []
     # texts.append(plt.text(max_year, max_temp, f'最高，{max_year}年，{max_temp}{unit}', color='red', ha='center', va='bottom'))
     # texts.append(plt.text(min_year, min_temp - num2 / 4, f'最低，{min_year}年，{min_temp}{unit}', color='red', ha='center', va='top'))
 
+    # 选择一个相对空旷的区域放置文本
+    text_x = year_min + (year_max - year_min) * 0.2 
+    text_y = y_min + (y_max - y_min) * 0.8  
+    
     if intercept >= 0:
-        texts.append(plt.text(valid_years.iloc[-2], valid_gstperatures.min() - num1 / 2, f'y={slope:.2f}x+{intercept:.2f}\nR$^2$={R2:.3f}', fontsize=7))
+        equation_text = f'y={slope:.2f}x+{intercept:.2f}\nR$^2$={R2:.3f}'
     else:
-        texts.append(plt.text(valid_years.iloc[-2], valid_gstperatures.min() - num1 / 2, f'y={slope:.2f}x{intercept:.2f}\nR$^2$={R2:.3f}', fontsize=7))
+        equation_text = f'y={slope:.2f}x{intercept:.2f}\nR$^2$={R2:.3f}'
+    
+    text_obj = plt.text(text_x, text_y, equation_text, fontsize=9)
 
-    # 使用有效数据点进行文本调整
+    # 生成避障点 - 更全面的覆盖
+    # 1. 数据点
+    points_x = valid_years.values
+    points_y = valid_gstperatures.values
+    
+    # 2. 生成所有连线上的密集点
+    line_points_x = []
+    line_points_y = []
+    
+    # 原始数据连线
+    for i in range(len(valid_years) - 1):
+        x_dense = np.linspace(valid_years.iloc[i], valid_years.iloc[i+1], 20)
+        y_dense = np.interp(x_dense, 
+                           [valid_years.iloc[i], valid_years.iloc[i+1]], 
+                           [valid_gstperatures.iloc[i], valid_gstperatures.iloc[i+1]])
+        line_points_x.extend(x_dense)
+        line_points_y.extend(y_dense)
+    
+    # 平均值线
+    mean_x = np.linspace(year_min, year_max, 50)
+    mean_y = np.full_like(mean_x, valid_gstperatures.mean())
+    line_points_x.extend(mean_x)
+    line_points_y.extend(mean_y)
+    
+    # 拟合线
+    fit_x = np.linspace(year_min, year_max, 50)
+    fit_y = slope * fit_x + intercept
+    line_points_x.extend(fit_x)
+    line_points_y.extend(fit_y)
+    
+    # 合并所有避障点
+    all_obstacle_x = np.concatenate([points_x, line_points_x])
+    all_obstacle_y = np.concatenate([points_y, line_points_y])
+
+    # 使用adjust_text进行避障
     adjust_text(
-        texts,
-        x=valid_years,
-        y=valid_gstperatures,
-        expand_text=(2.0, 2.0),  # 增加文本之间的间距
-        expand_points=(4.0, 4.0),  # 增加文本与点之间的间距
-        force_text=(1.0, 1.0),  # 增加文本之间的排斥力
-        force_points=(0.2, 0.2),  # 增加文本与点之间的排斥力
-        only_move={
-            'points': 'xy',
-            'text': 'xy'
-        },
+        [text_obj],
+        x=all_obstacle_x,
+        y=all_obstacle_y,
+        expand_text=(1.5, 1.5),
+        expand_points=(2.0, 2.0),
+        force_text=(0.5, 0.5),
+        force_points=(0.5, 0.5),
+        only_move={'points': 'xy', 'text': 'xy'}
     )
+
     
     # 网格
     plt.grid(axis='y', linestyle='--', alpha=0.4)
