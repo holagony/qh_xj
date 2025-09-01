@@ -103,14 +103,14 @@ def tem_report(basic_tem_yearly,basic_tem_accum,post_yearly_df,data_dir):
     dic['average_tem_1_year']=basic_tem_yearly['年份'][basic_tem_yearly['平均气温(°C)'].astype(float).idxmin()]
     dic['average_tem_2']=basic_tem_yearly['平均气温(°C)'][basic_tem_yearly['平均气温(°C)'].astype(float).idxmax()]
     dic['average_tem_2_year']=basic_tem_yearly['年份'][basic_tem_yearly['平均气温(°C)'].astype(float).idxmax()]
-    dic['max_tem_1']=basic_tem_yearly['最高气温(°C)'][basic_tem_yearly['最高气温(°C)'].astype(float).idxmin()]
-    dic['max_tem_1_year']=basic_tem_yearly['年份'][basic_tem_yearly['最高气温(°C)'].astype(float).idxmin()]
-    dic['max_tem_2']=basic_tem_yearly['最高气温(°C)'][basic_tem_yearly['最高气温(°C)'].astype(float).idxmax()]
-    dic['max_tem_2_year']=basic_tem_yearly['年份'][basic_tem_yearly['最高气温(°C)'].astype(float).idxmax()]
-    dic['min_tem_1']=basic_tem_yearly['最低气温(°C)'][basic_tem_yearly['最低气温(°C)'].astype(float).idxmin()]
-    dic['min_tem_1_year']=basic_tem_yearly['年份'][basic_tem_yearly['最低气温(°C)'].astype(float).idxmin()]
-    dic['min_tem_2']=basic_tem_yearly['最低气温(°C)'][basic_tem_yearly['最低气温(°C)'].astype(float).idxmax()]
-    dic['min_tem_2_year']=basic_tem_yearly['年份'][basic_tem_yearly['最低气温(°C)'].astype(float).idxmax()]
+    dic['max_tem_1']=basic_tem_yearly['极端最高气温(°C)'][basic_tem_yearly['极端最高气温(°C)'].astype(float).idxmin()]
+    dic['max_tem_1_year']=basic_tem_yearly['年份'][basic_tem_yearly['极端最高气温(°C)'].astype(float).idxmin()]
+    dic['max_tem_2']=basic_tem_yearly['极端最高气温(°C)'][basic_tem_yearly['极端最高气温(°C)'].astype(float).idxmax()]
+    dic['max_tem_2_year']=basic_tem_yearly['年份'][basic_tem_yearly['极端最高气温(°C)'].astype(float).idxmax()]
+    dic['min_tem_1']=basic_tem_yearly['极端最低气温(°C)'][basic_tem_yearly['极端最低气温(°C)'].astype(float).idxmin()]
+    dic['min_tem_1_year']=basic_tem_yearly['年份'][basic_tem_yearly['极端最低气温(°C)'].astype(float).idxmin()]
+    dic['min_tem_2']=basic_tem_yearly['极端最低气温(°C)'][basic_tem_yearly['极端最低气温(°C)'].astype(float).idxmax()]
+    dic['min_tem_2_year']=basic_tem_yearly['年份'][basic_tem_yearly['极端最低气温(°C)'].astype(float).idxmax()]
     
     # 图像绘制
     # 平均气温
@@ -125,9 +125,9 @@ def tem_report(basic_tem_yearly,basic_tem_accum,post_yearly_df,data_dir):
     average_tem_picture_hournum=plot_picture(basic_tem_yearly, '年份','平均气温(°C)','气温(℃)','℃','历年平均气温变化.png',2,2,data_dir)
 
     # 平均最高气温
-    mask = ~np.isnan(basic_tem_yearly['最高气温(°C)'])
+    mask = ~np.isnan(basic_tem_yearly['极端最高气温(°C)'])
     valid_years = basic_tem_yearly['年份'][mask]
-    valid_temperatures = basic_tem_yearly['最高气温(°C)'][mask]
+    valid_temperatures = basic_tem_yearly['极端最高气温(°C)'][mask]
     slope, intercept = np.polyfit(valid_years, valid_temperatures, 1)    
     if slope> 0:
         dic['max_tem_slope']='上升'
@@ -136,9 +136,9 @@ def tem_report(basic_tem_yearly,basic_tem_accum,post_yearly_df,data_dir):
     max_tem_picture_hournum=plot_picture(basic_tem_yearly, '年份','极端最高气温(°C)','气温(℃)','℃','历年平均最高气温变化.png',2,2,data_dir)
     
     # 平均最低气温
-    mask = ~np.isnan(basic_tem_yearly['最低气温(°C)'])
+    mask = ~np.isnan(basic_tem_yearly['极端最低气温(°C)'])
     valid_years = basic_tem_yearly['年份'][mask]
-    valid_temperatures = basic_tem_yearly['最低气温(°C)'][mask]
+    valid_temperatures = basic_tem_yearly['极端最低气温(°C)'][mask]
     slope, intercept = np.polyfit(valid_years, valid_temperatures, 1)
     if slope> 0:
         dic['min_tem_slope']='上升'
