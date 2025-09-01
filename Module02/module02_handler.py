@@ -97,7 +97,12 @@ def feature_stats_handler(data_json):
         elif ele == 'SSH':
             # yearly_elements += 'Snow_Depth_Max,V13334_067,'
             daily_elements += 'SSH,'
-
+            
+        elif ele == 'SNOW':
+            # yearly_elements += 'Snow_Depth_Max,V13334_067,'
+            monthly_elements += 'Snow_Depth_Max,V13334_060_C,'
+            daily_elements += 'Snow_Depth,'
+            
     # 4.数据获取
     if cfg.INFO.READ_LOCAL:
         
@@ -312,7 +317,7 @@ if __name__=='__main__':
     data_json={
   "years": "1985,2009",
   "station_ids": "52754",
-  "elements": "SSH",
+  "elements": "SNOW",
   "id": "uuid",
   "is_async": 0,
   "staValueName": [
