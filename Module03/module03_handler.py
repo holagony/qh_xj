@@ -1177,7 +1177,12 @@ def weather_process_stats(data_json):
     return result_dict
 
 if __name__=='__main__':
-    years="1970,2023"
-    sub_sta_ids=["56151"]
-    main_sta_ids="56067"
-    elements=["Thund","GSS","TEM_Min","TEM_Max","PRE_Time_2020"]
+    
+    data_json = dict()
+    data_json['years']="1970,2023"
+    data_json['sub_sta_ids']=["56151"]
+    data_json['main_sta_ids']="56067"
+    data_json['elements']=['PRE_Time_2020',"Snow",'GSS','Hail_Days']
+    
+    result = weather_phenomena_days(data_json)
+    
