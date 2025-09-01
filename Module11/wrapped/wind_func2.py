@@ -241,6 +241,6 @@ def wind_stats2(data_dict, time_range, consider_diff):
 
 
 if __name__ == '__main__':
-    df = get_data_postgresql(sta_id='QH001', time_range='20230801,20240630')
+    df = get_data_postgresql(sta_id='XJ_dabancheng', time_range='20220701,20230731')
     after_process = wind_tower_processing(df)
-    check_result2 = wind_stats2(after_process, time_range='20220801,20240630', consider_diff=0)
+    check_result2 = wind_stats2(after_process, time_range='20220701,20230731', consider_diff=0)
