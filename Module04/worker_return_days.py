@@ -34,7 +34,7 @@ def callback(url, result_id, result):
     requests.put(url, headers=header, data=json.dumps(_json))
 
 
-class workerReturnSnow:
+class workerReturnDays:
 
     def act(self, jsons):
         json_str = jsons
