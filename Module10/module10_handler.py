@@ -18,7 +18,7 @@ from Report.code.Module10.light_report_1 import light_report_1
 from Report.code.Module10.light_report_2 import light_report_2
 from Utils.get_url_path import save_cmadaas_data
 
-def adtd_data_proccessing(data, years):
+def adtd_data_proccessing(data, years, start_lon, start_lat, end_lon, end_lat):
     data['Datetime'] = pd.to_datetime(data['Datetime'])
     data.set_index('Datetime', inplace=True)
     data.sort_index(inplace=True)
@@ -33,6 +33,8 @@ def adtd_data_proccessing(data, years):
     end_year = years.split(',')[1]
     data = data[data.index.year >= int(start_year)]
     data = data[data.index.year <= int(end_year)]
+    data = data[(data['Lon'] >= start_lon) & (data['Lon'] <= end_lon)]
+    data = data[(data['Lat'] >= start_lat) & (data['Lat'] <= end_lat)]
 
     if 'Unnamed: 0' in data.columns:
         data.drop(['Unnamed: 0'], axis=1, inplace=True)
