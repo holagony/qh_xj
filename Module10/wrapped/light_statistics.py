@@ -35,13 +35,15 @@ def light_status(data1, start_lon, start_lat, end_lon, end_lat, save_path):
     #---------- 年统计
     yearly_means_z = data21.resample('Y').sum()
     yearly_means_f = data22.resample('Y').sum()
+    yearly_sum = data1.resample('Y').sum()
 
-    yearly_means_combined = pd.concat([yearly_means_z, yearly_means_f], axis=1)
-    yearly_means_combined.columns = ['正闪数量', '负闪数量']
+    yearly_means_combined = pd.concat([yearly_means_z, yearly_means_f, yearly_sum], axis=1)
+    yearly_means_combined.columns = ['正闪数量', '负闪数量', '总数量']
     years = yearly_means_combined.index.year.unique()
     
     yearly_means_combined.insert(loc=0, column='年份', value=yearly_means_combined.index.year)
     yearly_means_combined.reset_index(drop=True, inplace=True)
+
     yearly_means_combined_dict = yearly_means_combined.to_dict(orient='records')
 
     # 画柱状图
@@ -242,29 +244,27 @@ def light_status(data1, start_lon, start_lat, end_lon, end_lat, save_path):
 
 if __name__ == '__main__':
     
-    def adtd_data_proccessing(data):
-        data = data[data['Lit_Prov']=='青海省']
-        data = data[['Lat', 'Lon', 'Year', 'Mon', 'Day', 'Hour', 'Min', 'Second','Lit_Current']]
-        time = {"Year": data["Year"], "Month": data["Mon"], "Day": data["Day"], "Hour": data["Hour"], "Minute": data["Min"], "Second": data["Second"]}
-        data['Datetime'] = pd.to_datetime(time)
+    def adtd_data_proccessing(data, years):
+        data['Datetime'] = pd.to_datetime(data['Datetime'])
         data.set_index('Datetime', inplace=True)
         data.sort_index(inplace=True)
+        data['Lon'] = data['Lon'].astype(float)
+        data['Lat'] = data['Lat'].astype(float)
+        data.rename(columns={'强度': 'Lit_Current'}, inplace=True)
+
+        start_year = years.split(',')[0]
+        end_year = years.split(',')[1]
+        data = data[data.index.year >= int(start_year)]
+        data = data[data.index.year <= int(end_year)]
 
         if 'Unnamed: 0' in data.columns:
             data.drop(['Unnamed: 0'], axis=1, inplace=True)
 
         return data
 
-    start_lon = 100.8
-    start_lat = 36.2
-    end_lon = 101.9
-    end_lat = 37.5
-    resolution = 0.005
-    path = cfg.FILES.ADTD
-    df = pd.read_csv(path)
-    df = adtd_data_proccessing(df)
-    save_path = r'D:\Project\3_项目\2_气候评估和气候可行性论证\qhkxxlz\Report\report\Modules10'
-    result = light_status(df, start_lon, start_lat, end_lon, end_lat, save_path)
+    adtd_df = pd.read_csv(cfg.FILES.ADTD)
+    adtd_df = adtd_data_proccessing(adtd_df, '2000,2025')
+    light_status(adtd_df, start_lon=86.37, start_lat=42.75, end_lon=88.58, end_lat=44.08, save_path=r'C:\Users\mjynj\Desktop\aaa')
 
     
     

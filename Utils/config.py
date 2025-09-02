@@ -43,7 +43,7 @@ elif flag == 'LOCAL': # 自己电脑
     __C.INFO.OUT_UPLOAD_FILE = 'C:/Users/mjynj/Desktop/qh_xj/zipdata'
     __C.INFO.IN_DATA_DIR = '/data'  # 容器内保存文件夹
     __C.INFO.OUT_DATA_DIR = 'C:/Users/mjynj/Desktop/qh_xj/data'  # 容器外挂载保存文件夹
-    __C.INFO.OUT_DATA_URL = 'http://1.119.169.101:10036/img'
+    __C.INFO.OUT_DATA_URL = 'http://221.122.67.145:8889/xj-feasibility/img'
     __C.INFO.REDIS_HOST = '172.17.0.2'
     __C.INFO.REDIS_PORT = '6379'
     __C.INFO.REDIS_PWD = ''
@@ -90,7 +90,7 @@ __C.FILES.QH_DATA_YEAR = os.path.join(data_file_dir, 'test_data/qh_year.csv')
 __C.FILES.QH_DATA_RADI = os.path.join(data_file_dir, 'test_data/qh_radi.csv')
 __C.FILES.WIND_TOWER = os.path.join(data_file_dir, 'test_data/格尔木风冷')
 __C.FILES.PRE_MIN = os.path.join(data_file_dir, 'test_data/rain_min')
-__C.FILES.ADTD = os.path.join(data_file_dir, 'adtd.csv')
+__C.FILES.ADTD = os.path.join(data_file_dir, 'adtd_xj.csv')
 __C.FILES.ADTD_PARAM = os.path.join(data_file_dir, 'adtd_parameters.csv')
 __C.FILES.ADTD_FACTOR = os.path.join(data_file_dir, 'adtd_factors.npy')
 

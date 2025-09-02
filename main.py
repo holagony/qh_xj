@@ -65,3 +65,5 @@ if __name__ != '__main__':
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=80, debug=False)
+
+    # WIN_S_AVG_W 和 WIN_S_AVG__W

@@ -9,7 +9,7 @@ def basic_win_freq_statistics(win_freq):
     '''
     风向频率以及风向对应的风速要素，累年各月统计，
     使用天擎上的月数据，要素名称为天擎上默认的名称
-    月值要素：['Station_Id_C', 'Year', 'Mon', 'WIN_S_Avg_NNE', 'WIN_S_Avg_NE',  WIN_S_AVG_W
+    月值要素：['Station_Id_C', 'Year', 'Mon', 'WIN_S_Avg_NNE', 'WIN_S_Avg_NE',  'WIN_S_AVG__W',
               'WIN_S_Avg_ENE', 'WIN_S_Avg_E', 'WIN_S_Avg_ESE', 'WIN_S_Avg_SE',
               'WIN_S_Avg_SSE', 'WIN_S_Avg_S', 'WIN_S_Avg_SSW', 'WIN_S_Avg_SW',
               'WIN_S_Avg_WSW', 'WIN_S_Avg__W', 'WIN_S_Avg_WNW', 'WIN_S_Avg_NW',
@@ -64,7 +64,7 @@ def basic_win_freq_statistics(win_freq):
         try:
             # 累年各月风向对应的风速
             win_d_s = win_freq[[
-                'WIN_S_Avg_NNE', 'WIN_S_Avg_NE', 'WIN_S_Avg_ENE', 'WIN_S_Avg_E', 'WIN_S_Avg_ESE', 'WIN_S_Avg_SE', 'WIN_S_Avg_SSE', 'WIN_S_Avg_S', 'WIN_S_Avg_SSW', 'WIN_S_Avg_SW', 'WIN_S_Avg_WSW', 'WIN_S_AVG_W', 'WIN_S_Avg_WNW', 'WIN_S_Avg_NW',
+                'WIN_S_Avg_NNE', 'WIN_S_Avg_NE', 'WIN_S_Avg_ENE', 'WIN_S_Avg_E', 'WIN_S_Avg_ESE', 'WIN_S_Avg_SE', 'WIN_S_Avg_SSE', 'WIN_S_Avg_S', 'WIN_S_Avg_SSW', 'WIN_S_Avg_SW', 'WIN_S_Avg_WSW', 'WIN_S_AVG__W', 'WIN_S_Avg_WNW', 'WIN_S_Avg_NW',
                 'WIN_S_Avg_NNW', 'WIN_S_Avg__N'
             ]]
             mean_win_s_accum = []

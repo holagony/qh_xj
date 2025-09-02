@@ -16,17 +16,20 @@ from Module10.wrapped.light_disater import get_regional_risk
 from Module10.wrapped.light_mfi import light_mfi
 from Report.code.Module10.light_report_1 import light_report_1
 from Report.code.Module10.light_report_2 import light_report_2
+from Utils.get_url_path import save_cmadaas_data
 
-
-def adtd_data_proccessing(data):
-    data = data[data['Lit_Prov'] == '青海省']
-    data = data[['Lat', 'Lon', 'Year', 'Mon', 'Day', 'Hour', 'Min', 'Second', 'Lit_Current']]
-    time = {"Year": data["Year"], "Month": data["Mon"], "Day": data["Day"], "Hour": data["Hour"], "Minute": data["Min"], "Second": data["Second"]}
-    data['Datetime'] = pd.to_datetime(time)
+def adtd_data_proccessing(data, years):
+    data['Datetime'] = pd.to_datetime(data['Datetime'])
     data.set_index('Datetime', inplace=True)
     data.sort_index(inplace=True)
     data['Lon'] = data['Lon'].astype(float)
     data['Lat'] = data['Lat'].astype(float)
+    data.rename(columns={'强度': 'Lit_Current'}, inplace=True)
+
+    start_year = years.split(',')[0]
+    end_year = years.split(',')[1]
+    data = data[data.index.year >= int(start_year)]
+    data = data[data.index.year <= int(end_year)]
 
     if 'Unnamed: 0' in data.columns:
         data.drop(['Unnamed: 0'], axis=1, inplace=True)
@@ -45,7 +48,6 @@ def light_statistics_deal(data_json):
     end_lon = data_json['end_lon']
     end_lat = data_json['end_lat']
     point_list = data_json['point_list']
-    # resolution = data_json['resolution']
 
     start_lon = float(start_lon)
     start_lat = float(start_lat)
@@ -74,7 +76,7 @@ def light_statistics_deal(data_json):
     #         raise Exception('天擎数据下载或处理失败')
     
     adtd_df = pd.read_csv(cfg.FILES.ADTD)
-    adtd_df = adtd_data_proccessing(adtd_df)
+    adtd_df = adtd_data_proccessing(adtd_df, date_range)
 
     # 4.结果生成
     result_dict = light_status(adtd_df, start_lon, start_lat, end_lon, end_lat, data_dir)  # 图表统计
@@ -107,13 +109,9 @@ def light_statistics_deal(data_json):
                     sub_dict[name] = path.replace(cfg.INFO.OUT_DATA_DIR, cfg.INFO.OUT_DATA_URL)
             except:
                 pass
-    # csv结果保存
-    # if cfg.INFO.SAVE_RESULT:
-    #     result_list = []
-    #     result_list.append(OrderedDict(zip(['年_次数', '月_次数', '小时_次数', '年_天数', '月_天数'], [result_dict['次数统计']['年'], result_dict['次数统计']['月'], result_dict['次数统计']['小时'], result_dict['天数统计']['年'], result_dict['天数统计']['月']])))
-    #     result_dict['file_url'] = dict()
-    #     url_dict = get_url_path(data_dir, result_list)
-    #     result_dict['file_url'] = url_dict
+
+    if cfg.INFO.SAVE_RESULT:
+        result_dict['csv'] = save_cmadaas_data(data_dir, adtd_data=adtd_df)
 
     return result_dict
 
@@ -209,7 +207,7 @@ def light_risk_deal(data_json):
 
     # 3.拼接需要下载的参数
     adtd_df = pd.read_csv(cfg.FILES.ADTD)
-    adtd_df = adtd_data_proccessing(adtd_df)
+    adtd_df = adtd_data_proccessing(adtd_df, date_range)
 
     # if cfg.INFO.READ_LOCAL:
     #     adtd_df = pd.read_csv(cfg.FILES.ADTD)
@@ -239,112 +237,7 @@ def light_risk_deal(data_json):
         print(f"报告 发生了错误：{e}")
         result_dict['report'] = None
 
-    # 7.结果保存
-    # if cfg.INFO.SAVE_RESULT:
-    #     result_list = []
-    #     result_list.append(OrderedDict(zip(['各风险登记表'], [result_dict['各风险登记表']])))
-    #     result_dict['file_url'] = dict()
-    #     url_dict = get_url_path(data_dir, result_list)
-    #     result_dict['file_url'] = url_dict
+    if cfg.INFO.SAVE_RESULT:
+        result_dict['csv'] = save_cmadaas_data(data_dir, adtd_data=adtd_df)
 
     return result_dict
-
-
-def light_disater_deal(data_json):
-
-    # 1.参数读取
-    date_range = data_json['date_range']
-
-    start_lon = data_json['start_lon']
-    start_lat = data_json['start_lat']
-    end_lon = data_json['end_lon']
-    end_lat = data_json['end_lat']
-
-    wd = data_json['wd']  #地闪密度权重
-    wn = data_json['wn']  #地闪强度权重
-    ws = data_json['ws']  #土壤电导率权重
-    we = data_json['we']  #海拔高度权重
-    wt = data_json['wt']  #地形起伏权重
-    wp = data_json['wp']  #人口密度权重
-    wg = data_json['wg']  #GPD权重
-    wc = data_json['wc']  #生命idx权重
-    wm = data_json['wm']  #经济idx权重
-    wp1 = data_json['wp1']  #防护力idx权重
-    wh = data_json['wh']  #危险性权重
-    we1 = data_json['we1']  #暴露度权重
-    wf = data_json['wf']  #脆弱性权重
-
-    calc_breaks = data_json['calc_breaks']  #0使用预设数值分段，1实时自然断点
-    levels = 5  #默认5不变，分成5段
-
-    l5_break1 = 136  #断点1
-    l5_break2 = 158  #断点2
-    l5_break3 = 178  #断点3
-    l5_break4 = 199  #断点4
-
-    # 2.参数处理
-    uuid4 = uuid.uuid4().hex
-    data_dir = os.path.join(cfg.INFO.IN_DATA_DIR, uuid4)
-    if not os.path.exists(data_dir):
-        os.makedirs(data_dir)
-        os.chmod(data_dir, 0o007 | 0o070 | 0o700)
-
-    # 3.拼接需要下载的参数
-    if cfg.INFO.READ_LOCAL:
-        adtd_df = pd.read_csv(cfg.FILES.ADTD, low_memory=False)
-
-    else:
-        # 天擎数据下载
-        try:
-            limit = [start_lat, end_lat, start_lon, end_lon]
-            adtd_df = get_adtd_data_threads(date_range, limit)
-        except Exception as e:
-            raise Exception('天擎数据下载或处理失败')
-
-    # 6.结果生成
-
-    weights = dict()
-
-    weights['wd'] = wd
-    weights['wn'] = wn
-    weights['ws'] = ws
-    weights['we'] = we
-    weights['wt'] = wt
-    weights['wp'] = wp
-    weights['wg'] = wg
-    weights['wc'] = wc
-    weights['wm'] = wm
-    weights['wp1'] = wp1
-    weights['wh'] = wh
-    weights['we1'] = we1
-    weights['wf'] = wf
-
-    weights['calc_breaks'] = calc_breaks
-    weights['levels'] = levels
-
-    weights['l5_break1'] = l5_break1
-    weights['l5_break2'] = l5_break2
-    weights['l5_break3'] = l5_break3
-    weights['l5_break4'] = l5_break4
-
-    data = adtd_data_proccessing(adtd_df)
-    risk_levels, LDRI, save_path_picture_p = get_regional_risk(data, weights, start_lon, end_lon, start_lat, end_lat, data_dir)
-
-    result_dict = dict()
-    save_path_picture_p = save_path_picture_p.replace(cfg.INFO.IN_DATA_DIR, cfg.INFO.OUT_DATA_DIR)
-    result_dict['图片路径'] = save_path_picture_p.replace(cfg.INFO.OUT_DATA_DIR, cfg.INFO.OUT_DATA_URL)
-
-    return result_dict
-
-
-if __name__=='__main__':
-    
-    data_json=dict()
-    data_json['date_range']="2020,2023"
-    data_json['start_lon']= 100.8
-    data_json['start_lat']=36.2
-    data_json['end_lon']=101.9
-    data_json['end_lat']=37.5
-    data_json['point_list']=[[101.25,37.02],[101.349,36.81]]
-    
-    

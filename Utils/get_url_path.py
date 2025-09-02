@@ -6,7 +6,7 @@ from Utils.config import cfg
 from Utils.ordered_easydict import OrderedEasyDict as edict
 
 
-def save_cmadaas_data(data_dir, year_data=None, mon_data=None, day_data=None, hour_data=None, radi_data=None):
+def save_cmadaas_data(data_dir, year_data=None, mon_data=None, day_data=None, hour_data=None, radi_data=None, adtd_data=None):
     result = []
 
     if year_data is not None:
@@ -43,6 +43,13 @@ def save_cmadaas_data(data_dir, year_data=None, mon_data=None, day_data=None, ho
         radi_path = radi_path.replace(cfg.INFO.IN_DATA_DIR, cfg.INFO.OUT_DATA_DIR)
         radi_path = radi_path.replace(cfg.INFO.OUT_DATA_DIR, cfg.INFO.OUT_DATA_URL)
         result.append(radi_path)
+    
+    if adtd_data is not None:
+        adtd_path = os.path.join(data_dir, '所选区域闪电数据.csv')
+        adtd_data.to_csv(adtd_path, index=True, encoding='utf-8-sig')
+        adtd_path = adtd_path.replace(cfg.INFO.IN_DATA_DIR, cfg.INFO.OUT_DATA_DIR)
+        adtd_path = adtd_path.replace(cfg.INFO.OUT_DATA_DIR, cfg.INFO.OUT_DATA_URL)
+        result.append(adtd_path)
 
     return result
 
