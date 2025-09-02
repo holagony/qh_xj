@@ -527,7 +527,7 @@ def water_supply_calc_handler(data_json):
         day_eles = ('Station_Name,Station_Id_C,Lat,Lon,Datetime,Year,Mon,Day,' + daily_elements).split(',')
         daily_df = pd.read_csv(cfg.FILES.QH_DATA_DAY)
         daily_df = get_local_data(daily_df, sta_ids, day_eles, years, 'Day')
-        # daily_df['RHU_Avg'] = daily_df['RHU_Avg'] / 100
+        daily_df['RHU_Avg'] = daily_df['RHU_Avg'] / 100
     else:
         try:
             daily_df = get_cmadaas_daily_data(years, daily_elements, sta_ids)
@@ -599,7 +599,7 @@ def water_circulation_calc_handler(data_json):
         day_eles = ('Station_Name,Station_Id_C,Lat,Lon,Datetime,Year,Mon,Day,' + daily_elements).split(',')
         daily_df = pd.read_csv(cfg.FILES.QH_DATA_DAY)
         daily_df = get_local_data(daily_df, sta_ids, day_eles, years, 'Day')
-        # daily_df['RHU_Avg'] = daily_df['RHU_Avg'] / 100
+        daily_df['RHU_Avg'] = daily_df['RHU_Avg'] / 100
     else:
         try:
             daily_df = get_cmadaas_daily_data(years, daily_elements, sta_ids)
