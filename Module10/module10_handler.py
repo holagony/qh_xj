@@ -25,6 +25,9 @@ def adtd_data_proccessing(data, years):
     data['Lon'] = data['Lon'].astype(float)
     data['Lat'] = data['Lat'].astype(float)
     data.rename(columns={'强度': 'Lit_Current'}, inplace=True)
+    data['Year'] = data.index.year
+    data['Mon'] = data.index.month
+    data['Day'] = data.index.day
 
     start_year = years.split(',')[0]
     end_year = years.split(',')[1]
