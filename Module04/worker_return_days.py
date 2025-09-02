@@ -188,7 +188,7 @@ class workerReturnDays:
             # 6.结果保存
             if cfg.INFO.SAVE_RESULT:
                 try:
-                    day_result['csv'] = save_cmadaas_data(data_dir, month_data=monthly_df)
+                    day_result['csv'] = save_cmadaas_data(data_dir, mon_data=monthly_df)
                 except:
                     day_result['csv'] = save_cmadaas_data(data_dir, day_data=daily_df)
 
