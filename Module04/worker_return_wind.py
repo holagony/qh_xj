@@ -117,7 +117,7 @@ class workerReturnWind:
             df_sequence = daily_df[daily_df['Station_Id_C'] == main_station]
             sub_df = daily_df[daily_df['Station_Id_C'] == sub_station]
             wind_s = calc_return_period_wind(df_sequence, relocation_year, height_revision_year, measure_height, profile_index_main, 
-                                             return_years, CI, fitting_method, data_dir, from_database, sub_df, threshold, intercept)
+                                             return_years, CI, fitting_method, data_dir, from_database, sub_df, threshold, intercept,main_station)
             wind_s_result = wind_s.run()
             wind_s_result['uuid'] = uuid4
 

@@ -152,7 +152,7 @@ class workerReturnSnow:
                 
             # 6.结果保存
             if cfg.INFO.SAVE_RESULT:
-                snow_result['csv'] = save_cmadaas_data(data_dir, month_data=monthly_df)
+                snow_result['csv'] = save_cmadaas_data(data_dir, mon_data=monthly_df)
 
         except Exception as e:
             logging.exception(e)

@@ -445,12 +445,12 @@ class calc_return_period_wind:
         for key, value in max_values_dict.items():
             w_pressure[key] = [((val**2)*rho_10*(0.5)*1e-3).round(3) for val in max_values_dict[key]] # 基本风压 kN/m**2
             
-        data_prs=pd.read_csv(cfg.FILES.WIND_SNOW_PRESSURE,encoding='gbk')
-        data_prs = data_prs[(data_prs['类别'] == '风压 ') & (data_prs['站号'] == int(self.main_station))]
-        if len(data_prs) == 1:
-            w_pressure['参考值（国标）']=[ data_prs[str(y)].values[0] if str(y) in data_prs.columns else None for y in self.return_years]
-        else:
-            w_pressure['参考值（国标）']=[ None for y in self.return_years]
+        # data_prs=pd.read_csv(cfg.FILES.WIND_SNOW_PRESSURE,encoding='gbk')
+        # data_prs = data_prs[(data_prs['类别'] == '风压 ') & (data_prs['站号'] == int(self.main_station))]
+        # if len(data_prs) == 1:
+        #     w_pressure['参考值（国标）']=[ data_prs[str(y)].values[0] if str(y) in data_prs.columns else None for y in self.return_years]
+        # else:
+        #     w_pressure['参考值（国标）']=[ None for y in self.return_years]
                 
         result_dict.main_return_result['wind_pressure'] = w_pressure
 
