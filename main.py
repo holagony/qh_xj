@@ -67,4 +67,4 @@ if __name__ == '__main__':
     app.run(host='0.0.0.0', port=80, debug=False)
 
     # 新疆：WIN_S_AVG_W 和 青海：WIN_S_Avg__W
-    # element_ch.csv目前是新疆的
+    # element_ch.csv也要修改
