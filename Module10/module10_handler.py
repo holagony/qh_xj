@@ -81,7 +81,7 @@ def light_statistics_deal(data_json):
     #         raise Exception('天擎数据下载或处理失败')
     
     adtd_df = pd.read_csv(cfg.FILES.ADTD)
-    adtd_df = adtd_data_proccessing(adtd_df, date_range)
+    adtd_df = adtd_data_proccessing(adtd_df, date_range, start_lon, start_lat, end_lon, end_lat)
 
     # 4.结果生成
     result_dict = light_status(adtd_df, start_lon, start_lat, end_lon, end_lat, data_dir)  # 图表统计
@@ -212,7 +212,7 @@ def light_risk_deal(data_json):
 
     # 3.拼接需要下载的参数
     adtd_df = pd.read_csv(cfg.FILES.ADTD)
-    adtd_df = adtd_data_proccessing(adtd_df, date_range)
+    adtd_df = adtd_data_proccessing(adtd_df, date_range, start_lon, start_lat, end_lon, end_lat)
 
     # if cfg.INFO.READ_LOCAL:
     #     adtd_df = pd.read_csv(cfg.FILES.ADTD)
