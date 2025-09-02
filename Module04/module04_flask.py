@@ -38,6 +38,11 @@ def rp_wind():
     result = celery_submit.delay("workerReturnWind", json_str)
     return jsonify({'code': 202, 'msg': '任务提交成功，开始计算...', 'data': {'task_id': result.id}})
 
+@module04.route('/v1/return_period_day', methods=['POST'])
+def rp_day():
+    json_str = request.get_data(as_text=True)  # 获取JSON字符串
+    result = celery_submit.delay("workerReturnDay", json_str)
+    return jsonify({'code': 202, 'msg': '任务提交成功，开始计算...', 'data': {'task_id': result.id}})
 
 @module04.route('/v1/p3', methods=['POST'])
 def p3p3():
