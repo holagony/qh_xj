@@ -12,8 +12,12 @@ data_file_dir = os.path.join(current_obj, 'Files')
 # 生成字典
 __C = edict()
 cfg = __C
-flag = 'LOCAL'
-
+if os.name == 'nt':
+    flag = 'LOCAL'
+elif os.name == 'posix':
+    flag = 'HX'
+else:
+    flag = 'HX'
 # 信息配置
 __C.INFO = edict()
 __C.INFO.NUM_THREADS = 30  # 多线程数量
@@ -83,7 +87,7 @@ __C.FILES.T_DISTR_TABLE = os.path.join(data_file_dir, 't_distribution_table.csv'
 __C.FILES.ELEMENT_CH = os.path.join(data_file_dir, 'element_ch.csv')
 
 # 样例数据路径
-__C.FILES.QH_DATA_HOUR = os.path.join(data_file_dir, 'test_data/qh_hour.csv')
+__C.FILES.QH_DATA_HOUR = os.path.join(data_file_dir, 'test_data/qh_hour0.csv')
 __C.FILES.QH_DATA_DAY = os.path.join(data_file_dir, 'test_data/qh_day.csv')
 __C.FILES.QH_DATA_MONTH = os.path.join(data_file_dir, 'test_data/qh_mon.csv')
 __C.FILES.QH_DATA_YEAR = os.path.join(data_file_dir, 'test_data/qh_year.csv')
