@@ -18,6 +18,7 @@ elif os.name == 'posix':
     flag = 'HX'
 else:
     flag = 'HX'
+
 # 信息配置
 __C.INFO = edict()
 __C.INFO.NUM_THREADS = 30  # 多线程数量
@@ -97,6 +98,7 @@ __C.FILES.PRE_MIN = os.path.join(data_file_dir, 'test_data/rain_min')
 __C.FILES.ADTD = os.path.join(data_file_dir, 'adtd_xj.csv')
 __C.FILES.ADTD_PARAM = os.path.join(data_file_dir, 'adtd_parameters.csv')
 __C.FILES.ADTD_FACTOR = os.path.join(data_file_dir, 'adtd_factors.npy')
+__C.FILES.XJ_DEM = os.path.join(data_file_dir, 'xj_dem.nc')
 
 # report
 __C['report'] = dict()

@@ -15,6 +15,7 @@ import math
 import matplotlib
 import transbigdata as tbd
 from Utils.config import cfg
+import xarray as xr
 
 matplotlib.use('Agg')
 plt.rcParams['font.sans-serif'] = ['SimHei']
@@ -37,8 +38,16 @@ def light_mfi(data1, start_lon, start_lat, end_lon, end_lat, point_list, save_pa
         dlat = (lat2 - lat1)**2
         dlon = (lon2 - lon1)**2
         distance = (np.sqrt(dlat+dlon))*111000
+        
+        # 过滤掉无效数据
+        valid_mask = (~np.isnan(data1['Lit_Current'].values)) & (distance > 0)
+        if not valid_mask.any():
+            return 0.0  # 如果没有有效数据，返回0
+        
         # 计算电磁强度
-        H = (data1['Lit_Current'].abs().values*1000)/(np.pi*2*distance)
+        valid_current = data1['Lit_Current'].values[valid_mask]
+        valid_distance = distance[valid_mask]
+        H = (np.abs(valid_current)*1000)/(np.pi*2*valid_distance)
         H = H.max().round(3)
         return H
     
@@ -50,9 +59,38 @@ def light_mfi(data1, start_lon, start_lat, end_lon, end_lat, point_list, save_pa
     #-- 画图
     fig = plt.figure(figsize=(10, 6))
     ax = fig.add_subplot(111, projection=ccrs.PlateCarree())
-    contourf_obj = ax.scatter(lonlat['lon'], lonlat['lat'], c=lonlat['value'], cmap='rainbow', label='目标位置', transform=ccrs.PlateCarree())
+    
+    # 加载DEM数据作为背景
+    try:
+        dem_file = cfg.FILES.XJ_DEM
+        dem_data = xr.open_dataset(dem_file)
+        
+        # 提取DEM数据
+        dem_lon = dem_data['lon'].values
+        dem_lat = dem_data['lat'].values
+        dem_elevation = dem_data['dem'].values
+        
+        # 创建DEM背景图（不添加colorbar）
+        dem_contour = ax.contourf(dem_lon, dem_lat, dem_elevation, 
+                                  levels=50, cmap='terrain', alpha=0.7, 
+                                  transform=ccrs.PlateCarree(), add_colorbar=False)
+        
+        dem_data.close()
+    except Exception as e:
+        print(f"警告：无法加载DEM数据: {e}")
+    
+    # 绘制电磁强度散点图
+    contourf_obj = ax.scatter(lonlat['lon'], lonlat['lat'], c=lonlat['value'], 
+                             cmap='rainbow', label='目标位置', s=100, 
+                             edgecolors='black', linewidth=0.5,
+                             transform=ccrs.PlateCarree())
+    
     l2 = ax.legend()
-    cb = fig.colorbar(contourf_obj, ax=ax, shrink=0.95)
+     
+    # 创建电磁强度的colorbar，显示分级变化
+    cb = fig.colorbar(contourf_obj, ax=ax, shrink=0.8, label='电磁强度')
+    cb.set_label('电磁强度', rotation=270, labelpad=15)
+    
     g1 = ax.gridlines(draw_labels=True, linewidth=1, color='grey', alpha=0.4, linestyle='--', x_inline=False, y_inline=False)
     g1.top_labels = False
     g1.right_labels = False
@@ -60,10 +98,11 @@ def light_mfi(data1, start_lon, start_lat, end_lon, end_lat, point_list, save_pa
     g1.yformatter = LATITUDE_FORMATTER
     g1.rotate_labels = False
 
-    # 设置图表范围（根据需要调整）
-    # bounds = [start_lon, start_lat, end_lon, end_lat]
-    # tbd.plot_map(plt, bounds, zoom=9, style=2)
+    # 设置图表范围
     ax.set_extent([start_lon, end_lon, start_lat, end_lat], crs=ccrs.PlateCarree())
+    
+    # 添加标题
+    ax.set_title('目标位置电磁场强度分布', fontsize=12, pad=10)
 
     save_path_picture_p = os.path.join(save_path, '最大电磁场强度分布图.png')
     plt.savefig(save_path_picture_p, bbox_inches='tight', dpi=200)
@@ -77,27 +116,31 @@ def light_mfi(data1, start_lon, start_lat, end_lon, end_lat, point_list, save_pa
 
 if __name__ == '__main__':
     
-    def adtd_data_proccessing(data):
-        data = data[data['Lit_Prov'] == '青海省']
-        data = data[['Lat', 'Lon', 'Year', 'Mon', 'Day', 'Hour', 'Min', 'Second', 'Lit_Current']]
-        time = {"Year": data["Year"], "Month": data["Mon"], "Day": data["Day"], "Hour": data["Hour"], "Minute": data["Min"], "Second": data["Second"]}
-        data['Datetime'] = pd.to_datetime(time)
+    def adtd_data_proccessing(data, years):
+        data['Datetime'] = pd.to_datetime(data['Datetime'])
         data.set_index('Datetime', inplace=True)
         data.sort_index(inplace=True)
-    
+        data['Lon'] = data['Lon'].astype(float)
+        data['Lat'] = data['Lat'].astype(float)
+        data.rename(columns={'强度': 'Lit_Current'}, inplace=True)
+        data['Year'] = data.index.year
+        data['Mon'] = data.index.month
+        data['Day'] = data.index.day
+
+        start_year = years.split(',')[0]
+        end_year = years.split(',')[1]
+        data = data[data.index.year >= int(start_year)]
+        data = data[data.index.year <= int(end_year)]
+
         if 'Unnamed: 0' in data.columns:
             data.drop(['Unnamed: 0'], axis=1, inplace=True)
-    
+        
         return data
-    
-    start_lon = 100.8
-    end_lon = 101.9
-    start_lat = 36.2
-    end_lat = 37.5
-    path = r'C:/Users/MJY/Desktop/adtd.csv'
-    df = pd.read_csv(path)
-    df = adtd_data_proccessing(df)
-    point_list = [[101.25,37.02],[101.349,36.81]]
+
+    adtd_df = pd.read_csv(cfg.FILES.ADTD)
+    adtd_df = adtd_data_proccessing(adtd_df, '2000,2025')
+
+    point_list = [[87,43]]
     save_path = r'C:/Users/MJY/Desktop/adtd'
-    lonlat, save_path_picture_p = light_mfi(df, start_lon, start_lat, end_lon, end_lat, point_list, save_path)
+    lonlat, save_path_picture_p = light_mfi(adtd_df, start_lon=86.37, start_lat=42.75, end_lon=88.58, end_lat=44.08, point_list=point_list, save_path=r'C:\Users\mjynj\Desktop\aaa')
 
