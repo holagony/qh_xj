@@ -201,6 +201,6 @@ def pollute_deal(data_json):
     
     # 7.结果保存
     if cfg.INFO.SAVE_RESULT:
-        result_dict['csv'] = save_cmadaas_data(data_dir, month_data=monthly_df)
+        result_dict['csv'] = save_cmadaas_data(data_dir, mon_data=monthly_df)
     
     return result_dict
