@@ -140,7 +140,7 @@ def wind_tower_upload(paths, sta_id, lon=None, lat=None):
         print('入库finished')
     except Exception as e:
         logging.exception(e)
-        raise Exception('入库error')
+        raise
 
     # return df_all, df_trans
 
