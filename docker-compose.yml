@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  xj_qhkxxlz:
+    image: 564d64adeb03
+    container_name: xj_qhkxxlz
+    restart: always
+    ports:
+      - "5000:5050"
+    volumes:
+      - /home/hadoop/data_center/apicode/qh_xj/data:/data
+      - /home/hadoop/data_center/apicode/qh_xj/logs:/logs
+      - /home/hadoop/data_center/apicode/qh_xj/app:/app
+      - /mnt/PRESKY/project/bgdb/qihou/zipdata:/zipdata
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - qh_network
+    stdin_open: true
+    tty: true
+
+networks:
+  qh_network:
+    driver: bridge
