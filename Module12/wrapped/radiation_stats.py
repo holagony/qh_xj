@@ -72,6 +72,30 @@ def radiation_data_check(df):
     return check_result
 
 
+# 全局缓存EQ表，避免重复创建
+_EQ_TABLE = None
+
+def _get_eq_table():
+    global _EQ_TABLE
+    if _EQ_TABLE is None:
+        table = pd.DataFrame()
+        table['平年'] = list(range(1, 32)) + [np.nan]
+        table['闰年'] = [np.nan] + list(range(1, 32))
+        table[1] = [-2, -3, -3, -4, -4, -5, -5, -5, -6, -6, -7, -7, -7, -8, -8, -9, -9, -9, -10, -10, -10, -11, -11, -11, -11, -12, -12, -12, -12, -13, -13, np.nan]
+        table[2] = [-13, -13, -13, -13, -14, -14, -14, -14, -14, -14, -14, -14, -14, -14, -14, -14, -14, -14, -14, -14, -14, -14, -14, -14, -14, -13, -13, -13, -13, np.nan, np.nan, np.nan]
+        table[3] = [-13, -13, -13, -12, -12, -12, -12, -12, -11, -11, -11, -11, -10, -10, -10, -10, -9, -9, -9, -8, -8, -8, -8, -7, -7, -7, -6, -6, -6, -5, -5, -5]
+        table[4] = [-5, -4, -4, -4, -3, -3, -3, -3, -2, -2, -2, -1, -1, -1, -1, -0, -0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 2, 3, 3, 3, np.nan]
+        table[5] = [3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 3, 3, 3, 3, 3, 3, 3, 3]
+        table[6] = [3, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 0, 0, -0, -0, -1, -1, -1, -1, -1, -2, -2, -2, -2, -2, -3, -3, -3, -3, np.nan]
+        table[7] = [-3, -4, -4, -4, -4, -4, -4, -5, -5, -5, -5, -5, -5, -6, -6, -6, -6, -6, -6, -6, -6, -6, -6, -7, -7, -7, -7, -7, -7, -7, -7, -7]
+        table[8] = [-7, -7, -7, -6, -6, -6, -6, -6, -6, -6, -6, -6, -6, -5, -5, -5, -5, -5, -4, -4, -4, -4, -3, -3, -3, -3, -2, -2, -2, -1, -1, -1]
+        table[9] = [-1, -0, -0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 5, 5, 5, 6, 6, 6, 7, 7, 8, 8, 8, 9, 9, 10, 10, 10, np.nan]
+        table[10] = [10, 10, 11, 11, 11, 12, 12, 12, 13, 13, 13, 13, 14, 14, 14, 14, 15, 15, 15, 15, 15, 15, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16]
+        table[11] = [16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 15, 15, 15, 15, 15, 14, 14, 14, 14, 13, 13, 13, 12, 12, 12, 11, 11, np.nan]
+        table[12] = [11, 11, 10, 10, 10, 9, 9, 8, 8, 8, 7, 7, 6, 6, 5, 5, 5, 4, 4, 3, 3, 2, 2, 1, 1, 0, -0, -1, -1, -1, -2, -2]
+        _EQ_TABLE = table
+    return _EQ_TABLE
+
 def radiation_partition(df, lon, lat):
     '''
     晴空指数法
@@ -80,86 +104,57 @@ def radiation_partition(df, lon, lat):
     lon = float(lon)
     lat = float(lat)
     
-    # 创建EQ时差表
-    table = pd.DataFrame()
-    table['平年'] = list(range(1, 32)) + [np.nan]
-    table['闰年'] = [np.nan] + list(range(1, 32))
-    table[1] = [-2, -3, -3, -4, -4, -5, -5, -5, -6, -6, -7, -7, -7, -8, -8, -9, -9, -9, -10, -10, -10, -11, -11, -11, -11, -12, -12, -12, -12, -13, -13, np.nan]
-    table[2] = [-13, -13, -13, -13, -14, -14, -14, -14, -14, -14, -14, -14, -14, -14, -14, -14, -14, -14, -14, -14, -14, -14, -14, -14, -14, -13, -13, -13, -13, np.nan, np.nan, np.nan]
-    table[3] = [-13, -13, -13, -12, -12, -12, -12, -12, -11, -11, -11, -11, -10, -10, -10, -10, -9, -9, -9, -8, -8, -8, -8, -7, -7, -7, -6, -6, -6, -5, -5, -5]
-    table[4] = [-5, -4, -4, -4, -3, -3, -3, -3, -2, -2, -2, -1, -1, -1, -1, -0, -0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 2, 3, 3, 3, np.nan]
-    table[5] = [3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 3, 3, 3, 3, 3, 3, 3, 3]
-    table[6] = [3, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 0, 0, -0, -0, -1, -1, -1, -1, -1, -2, -2, -2, -2, -2, -3, -3, -3, -3, np.nan]
-    table[7] = [-3, -4, -4, -4, -4, -4, -4, -5, -5, -5, -5, -5, -5, -6, -6, -6, -6, -6, -6, -6, -6, -6, -6, -7, -7, -7, -7, -7, -7, -7, -7, -7]
-    table[8] = [-7, -7, -7, -6, -6, -6, -6, -6, -6, -6, -6, -6, -6, -5, -5, -5, -5, -5, -4, -4, -4, -4, -3, -3, -3, -3, -2, -2, -2, -1, -1, -1]
-    table[9] = [-1, -0, -0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 5, 5, 5, 6, 6, 6, 7, 7, 8, 8, 8, 9, 9, 10, 10, 10, np.nan]
-    table[10] = [10, 10, 11, 11, 11, 12, 12, 12, 13, 13, 13, 13, 14, 14, 14, 14, 15, 15, 15, 15, 15, 15, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16]
-    table[11] = [16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 15, 15, 15, 15, 15, 14, 14, 14, 14, 13, 13, 13, 12, 12, 12, 11, 11, np.nan]
-    table[12] = [11, 11, 10, 10, 10, 9, 9, 8, 8, 8, 7, 7, 6, 6, 5, 5, 5, 4, 4, 3, 3, 2, 2, 1, 1, 0, -0, -1, -1, -1, -2, -2]
-
+    table = _get_eq_table()
+    
+    # 向量化计算基础参数
     n = df.index.day_of_year.values  # 积日
+    years = df.index.year.values
+    months = df.index.month.values
+    days = df.index.day.values
+    hours = df.index.hour.values
+    
+    # 向量化计算EDNI
     EDNI = 1366.1 * (1 + 0.033 * np.cos(np.radians(360 * n / 365)))
-    phi = np.radians(lat)  # 转换为弧度
-    delta = np.radians(23.45 * np.sin(np.radians(360 * (284 + n) / 365)))  # 转换为弧度
-    c_t = df.index.hour.values
-    l_g = lon
-    l_c = (l_g - 120) / 15  # 经度修正，单位：小时
-
-    def query_eq(x):
-        '''
-        EQ表查表确定分钟值，转换为小时
-        '''
-        if calendar.isleap(x['Year']):
-            row = table.loc[table['闰年'] == x['Day'], table.columns == x['Mon']]
-
+    phi = np.radians(lat)
+    delta = np.radians(23.45 * np.sin(np.radians(360 * (284 + n) / 365)))
+    l_c = (lon - 120) / 15
+    
+    # 向量化查表计算EQ
+    is_leap = np.array([calendar.isleap(year) for year in years])
+    eq_values = np.zeros(len(df))
+    
+    for i, (year, month, day, leap) in enumerate(zip(years, months, days, is_leap)):
+        if leap:
+            if day <= 31 and month <= 12:
+                eq_values[i] = table.loc[table['闰年'] == day, month].iloc[0] if not table.loc[table['闰年'] == day, month].empty else 0
         else:
-            row = table.loc[table['平年'] == x['Day'], table.columns == x['Mon']]
-
-        return row.values[0][0] / 60
-
-    e_q = df.apply(query_eq, axis=1).values
-    t_t = c_t + l_c + e_q
-    omega = np.radians((t_t - 12) * 15)  # 时角，转换为弧度
+            if day <= 31 and month <= 12:
+                eq_values[i] = table.loc[table['平年'] == day, month].iloc[0] if not table.loc[table['平年'] == day, month].empty else 0
+    
+    e_q = eq_values / 60  # 转换为小时
+    t_t = hours + l_c + e_q
+    omega = np.radians((t_t - 12) * 15)
+    
+    # 向量化计算EHI
     EHI = EDNI * (np.cos(phi) * np.cos(delta) * np.cos(omega) + np.sin(phi) * np.sin(delta))
-    EHI = np.maximum(EHI, 0)  # 确保EHI不为负值（夜间或太阳在地平线以下时）
-
-    # 将EHI转换为与总辐射相同的单位 (MJ/m²)
-    # EHI原单位为W/m²，转换为MJ/m²: W/m² * 3600 / 1e6 = MJ/m²
+    EHI = np.maximum(EHI, 0)
     EHI_MJ = EHI * 3600 / 1e6
-
-    # 晴空系数计算，确保单位一致 (都是MJ/m²)
-    # 使用更小的最小值避免除零，同时不影响正常计算
-    kt = df.iloc[:, -1] / np.maximum(EHI_MJ, 1e-6)  # 避免除以0或极小值
+    
+    # 向量化计算晴空系数
+    total_radiation = df.iloc[:, -1].values
+    kt = total_radiation / np.maximum(EHI_MJ, 1e-6)
     kt = np.abs(kt)
-    kt = np.minimum(kt, 1.0)  # 晴空系数不应超过1.0
-
-    def calc_f_kt(x):
-        if pd.isna(x) or x < 0:
-            return np.nan
-        elif 0 <= x < 0.35:
-            return 1.0 - 0.249 * x
-        elif 0.35 <= x <= 0.75:
-            return 1.557 - 1.84 * x
-        elif x > 0.75:
-            return 0.177
-        else:
-            return np.nan
-
-    f_kt = kt.apply(calc_f_kt)  # 散射辐射比例
+    kt = np.minimum(kt, 1.0)
     
-    # 只在有效太阳辐射时间计算分离
-    # 降低阈值：0.001 MJ/m² (约1 W/m²)，确保更多有效数据点
-    # valid_mask = (EHI_MJ > 0.001) & (~pd.isna(f_kt)) & (df.iloc[:, -1] > 0)
+    # 向量化计算f_kt
+    f_kt = np.where(pd.isna(kt) | (kt < 0), np.nan,
+                   np.where(kt < 0.35, 1.0 - 0.249 * kt,
+                           np.where(kt <= 0.75, 1.557 - 1.84 * kt, 0.177)))
     
-    # df['散射辐射'] = np.where(valid_mask, 
-    #                         (df.iloc[:, -1] * f_kt).round(4), 
-    #                         0)
-    # df['直接辐射'] = np.where(valid_mask,
-    #                         (df['总辐射'] - df['散射辐射']).round(4),
-    #                         0)
-    df['散射辐射'] = (df.iloc[:, -1] * f_kt).round(1)
-    df['直接辐射'] = (df['总辐射'] - df['散射辐射']).round(1)
-
+    # 计算散射和直接辐射
+    df['散射辐射'] = np.round(total_radiation * f_kt, 1)
+    df['直接辐射'] = np.round(total_radiation - df['散射辐射'], 1)
+    
     return df
 
 
@@ -173,45 +168,75 @@ def radiation_data_stats(df, flag=None):
 
     # 提取数据信息
     exposure = df[df.filter(like='辐射').columns]  # MJ.m-2
+    num_year = len(exposure.index.year.unique())
+    
+    # 预计算索引，避免重复计算
+    years_idx = exposure.index.year
+    months_idx = exposure.index.month
+    hours_idx = exposure.index.hour
 
-    # 历年
+    # 历年 - 使用resample优化
     sum_yearly = exposure.resample('1A').sum().round(1)
     sum_yearly.insert(loc=0, column='时间', value=sum_yearly.index.strftime('%Y'))
     sum_yearly.reset_index(drop=True, inplace=True)
-    stats_result['年变化'] = sum_yearly.to_dict(orient='records')
+    stats_result['年总辐射量'] = sum_yearly.to_dict(orient='records')
 
-    # 历月
+    # 季节变化辐射量 - sum
+    season_map = {1: '冬', 2: '冬', 3: '春', 4: '春', 5: '春',
+                  6: '夏', 7: '夏', 8: '夏', 9: '秋', 10: '秋', 11: '秋', 12: '冬'}
+    seasons_series = months_idx.map(season_map)
+    
+    seasonal_groups = exposure.groupby([years_idx, seasons_series]).sum().round(1)
+    exposure_seasonal = []
+    
+    # 定义季节排序顺序
+    season_order = {'春': 1, '夏': 2, '秋': 3, '冬': 4}
+    
+    for (year, season), row in seasonal_groups.iterrows():
+        seasonal_record = row.to_dict()
+        seasonal_record['时间'] = f'{year}年{season}'
+        seasonal_record['年份'] = year
+        seasonal_record['季节'] = season
+        seasonal_record['季节排序'] = season_order[season]
+        exposure_seasonal.append(seasonal_record)
+    
+    exposure_seasonal = pd.DataFrame(exposure_seasonal)
+    if not exposure_seasonal.empty:
+        # 按年份和季节顺序排序
+        exposure_seasonal = exposure_seasonal.sort_values(['年份', '季节排序'])
+        # 移除辅助列
+        exposure_seasonal = exposure_seasonal.drop(['年份', '季节', '季节排序'], axis=1)
+        # 重新排列列顺序
+        cols = ['时间'] + [col for col in exposure_seasonal.columns if col != '时间']
+        exposure_seasonal = exposure_seasonal[cols]
+        exposure_seasonal.reset_index(drop=True, inplace=True)
+    stats_result['季节辐射量'] = exposure_seasonal.to_dict(orient='records')
+
+    # 历月 - 使用resample优化
     exposure_sum = exposure.resample('1M').sum().round(1)  # 月累积
     exposure_sum.insert(loc=0, column='时间', value=exposure_sum.index.strftime('%Y-%m'))
     exposure_sum.reset_index(drop=True, inplace=True)
-    stats_result['月变化'] = exposure_sum.to_dict(orient='records')
+    stats_result['月总辐射量'] = exposure_sum.to_dict(orient='records')
 
-    # 累年各月
-    num_year = len(exposure.index.year.unique())
-    exposure_monthly = []
-    for i in range(1, 13):
-        # 计算多年来各月的平均总辐射量
-        monthly_sums = exposure[exposure.index.month == i].sum()
-        tmp = (monthly_sums/num_year).round(1)  # 各月总量的多年平均
-        exposure_monthly.append(tmp)
+    exposure_mean = exposure.resample('1M').mean().round(1)  # 月平均
+    exposure_mean.insert(loc=0, column='时间', value=exposure_mean.index.strftime('%Y-%m'))
+    exposure_mean.reset_index(drop=True, inplace=True)
+    stats_result['月平均辐射量'] = exposure_mean.to_dict(orient='records')
 
-    exposure_monthly = pd.DataFrame(exposure_monthly)
-    exposure_monthly.insert(loc=0, column='时间', value=[str(i+1) + '月' for i in exposure_monthly.index])
+    # 累年各月 - 向量化计算，避免循环
+    monthly_groups = exposure.groupby(months_idx).sum()
+    exposure_monthly = (monthly_groups / num_year).round(1)
+    exposure_monthly.insert(loc=0, column='时间', value=[f'{i}月' for i in exposure_monthly.index])
     exposure_monthly.reset_index(drop=True, inplace=True)
-    stats_result['累年各月变化'] = exposure_monthly.to_dict(orient='records')
+    stats_result['多年月平均辐射量'] = exposure_monthly.to_dict(orient='records')
 
     if flag == 'radi':
-        # 日变化
-        exposure_hourly_mean = []
-        for i in range(0, 24):
-            exposure_i_mean = exposure[exposure.index.hour == i].sum()
-            exposure_i_mean = (exposure_i_mean/num_year).round(1)
-            exposure_hourly_mean.append(exposure_i_mean)
-
-        exposure_hourly_mean = pd.DataFrame(exposure_hourly_mean)
-        exposure_hourly_mean.insert(loc=0, column='时间', value=[str(i) + '时' for i in exposure_hourly_mean.index])
+        # 日变化 - 向量化计算，避免循环
+        hourly_groups = exposure.groupby(hours_idx).sum()
+        exposure_hourly_mean = (hourly_groups / num_year).round(1)
+        exposure_hourly_mean.insert(loc=0, column='时间', value=[f'{i}时' for i in exposure_hourly_mean.index])
         exposure_hourly_mean.reset_index(drop=True, inplace=True)
-        stats_result['累年日变化'] = exposure_hourly_mean.to_dict(orient='records')
+        stats_result['日内逐时平均辐射量'] = exposure_hourly_mean.to_dict(orient='records')
 
     return stats_result
 
