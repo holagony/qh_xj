@@ -44,11 +44,11 @@ def rain_step1(data_json):
     print('-----------')
 
     input_path = input_path.replace(cfg.INFO.OUT_UPLOAD_FILE, cfg.INFO.IN_UPLOAD_FILE)  # inupt_path要转换为容器内的路径
-    print('容器内路径是')
-    print(input_path)
-    
+
     if '\\' in input_path:
         input_path = input_path.replace('\\', '/') # windows to linux
+
+    print('容器内路径是: ' + input_path)
 
     # if os.path.isfile(input_path):  #.dat
     #     input_path = {'R': input_path}
@@ -67,8 +67,7 @@ def rain_step1(data_json):
         R_path = glob.glob(os.path.join(R_path, '*.DAT'))[0]
         input_path['R'] = R_path
 
-    logging.info(input_path)
-    print(input_path)
+    print('处理后的分钟数据路径是: ' + input_path)
 
     # 生成结果
     # 输出的给后续步骤计算的pickle和csv文件路径都在容器内，不用改动

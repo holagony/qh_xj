@@ -11,7 +11,7 @@ services:
       - /home/hadoop/data_center/apicode/qh_xj/data:/data
       - /home/hadoop/data_center/apicode/qh_xj/logs:/logs
       - /home/hadoop/data_center/apicode/qh_xj/app:/app
-      - /mnt/PRESKY/project/bgdb/qihou/zipdata:/zipdata
+      - /mnt/PRESKY/project/bgdb/xinjiang-feasibility/zipdata:/zipdata
     extra_hosts:
       - "host.docker.internal:host-gateway"
     networks:
