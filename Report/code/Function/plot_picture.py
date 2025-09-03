@@ -85,9 +85,9 @@ def plot_picture(df, namex, namey, namelable, unit, namepng, num1, num2, data_di
     text_y = y_min + (y_max - y_min) * 0.8  
     
     if intercept >= 0:
-        equation_text = f'y={slope:.2f}x+{intercept:.2f}\nR$^2$={R2:.3f}'
+        equation_text = f'y={slope:.2f}x+{intercept:.2f}\n趋势率={slope*10:.2f}{unit}/10a'
     else:
-        equation_text = f'y={slope:.2f}x{intercept:.2f}\nR$^2$={R2:.3f}'
+        equation_text = f'y={slope:.2f}x{intercept:.2f}\n趋势率={slope*10:.2f}{unit}/10a'
     
     text_obj = plt.text(text_x, text_y, equation_text, fontsize=9)
 
