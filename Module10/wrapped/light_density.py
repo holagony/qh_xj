@@ -33,8 +33,18 @@ def light_density(data1, start_lon, start_lat, end_lon, end_lat, resolution, poi
     Lats = np.arange(start_lat, end_lat + resolution, resolution)
     H_total, xedges, yedges = np.histogram2d(data1['Lon'], data1['Lat'], bins=(Lons, Lats))
     H_total = H_total.T
-    lightning_grid = H_total / (resolution * 111 * resolution * 111 * len(data1.index.year.unique()))
+    # 计算年数，避免除零错误
+    num_years = len(data1.index.year.unique())
+    if num_years == 0:
+        num_years = 1
+    
+    lightning_grid = H_total / (resolution * 111 * resolution * 111 * num_years)
     x, y = np.meshgrid(Lons[:-1], Lats[:-1])
+    
+    # 调试信息（可选）
+    # print(f"Lightning grid stats: min={lightning_grid.min():.6f}, max={lightning_grid.max():.6f}, mean={lightning_grid.mean():.6f}")
+    # print(f"Non-zero values: {np.count_nonzero(lightning_grid)}")
+    # print(f"Total grid points: {lightning_grid.size}")
 
     #-- 计算雷电流的平均值
     A_total = np.zeros_like(H_total)
@@ -50,9 +60,47 @@ def light_density(data1, start_lon, start_lat, end_lon, end_lat, resolution, poi
     # A_avg = np.where(H_total > 0, A_total / H_total, 0)
 
     #-- 画图
-    levels = [0, 0.8, 2, 2.8, 5, 8, 11, 15, 100]
+    # 根据实际数据范围动态设置色标
+    data_max = lightning_grid.max()
+    data_min = lightning_grid.min()
+    
+    if data_max > 0:
+        # 如果有数据，使用动态levels
+        if data_max <= 1:
+            levels = [0, 0.1, 0.2, 0.3, 0.5, 0.7, 0.8, 0.9]
+            if data_max > 0.9:
+                levels.append(data_max)
+            else:
+                levels = [l for l in levels if l <= data_max] + [data_max]
+        elif data_max <= 10:
+            levels = [0, 0.8, 2, 2.8, 5, 8]
+            if data_max > 8:
+                levels.append(data_max)
+            else:
+                levels = [l for l in levels if l <= data_max] + [data_max]
+        else:
+            levels = [0, 0.8, 2, 2.8, 5, 8, 11, 15]
+            if data_max > 15:
+                levels.append(data_max)
+            else:
+                levels = [l for l in levels if l <= data_max] + [data_max]
+        
+        # 确保levels严格递增且去重
+        levels = sorted(list(set(levels)))
+        # 如果只有一个level，添加一个稍大的值
+        if len(levels) <= 1:
+            levels = [0, max(data_max, 0.1)]
+    else:
+        # 如果没有数据，使用默认levels
+        levels = [0, 0.8, 2, 2.8, 5, 8, 11, 15, 100]
+    
     colors = [[204, 204, 204], [60, 130, 255], [0, 255, 255], [255, 255, 0], [255, 170, 0], [255, 0, 255], [170, 0, 0], [100, 0, 0]]
+    # 确保颜色数量与levels匹配
+    colors = colors[:len(levels)-1]
     colors = [[r / 255.0, g / 255.0, b / 255.0, 0.7] for r, g, b in colors]
+    
+    # print(f"Using levels: {levels}")
+    # print(f"Using {len(colors)} colors")
 
     fig = plt.figure(figsize=(7, 5))
     ax = fig.add_subplot(111, projection=ccrs.PlateCarree())
@@ -61,7 +109,14 @@ def light_density(data1, start_lon, start_lat, end_lon, end_lat, resolution, poi
     l2 = ax.legend()
 
     legend_patches = [Rectangle((0, 0), 1, 1, fc=color) for color in colors]
-    legend_labels = ['0-0.8', '0.8-2', '2-2.8', '2.8-5', '5-8', '8-11', '11-15.5', '≥15.5']
+    # 动态生成图例标签
+    legend_labels = []
+    for i in range(len(levels)-1):
+        if i == len(levels)-2:
+            legend_labels.append(f'≥{levels[i]}')
+        else:
+            legend_labels.append(f'{levels[i]}-{levels[i+1]}')
+    
     l1 = ax.legend([legend_patches[i] for i in range(len(legend_labels))], legend_labels, title="地闪密度（次平方千米每年）", loc="upper left", bbox_to_anchor=(1, 1), framealpha=0)
     g1 = ax.gridlines(draw_labels=True, linewidth=1, color='grey', alpha=0.4, linestyle='--', x_inline=False, y_inline=False)
     g1.top_labels = False
@@ -108,27 +163,29 @@ def light_density(data1, start_lon, start_lat, end_lon, end_lat, resolution, poi
 
 if __name__ == '__main__':
 
-    def adtd_data_proccessing(data):
-        data = data[data['Lit_Prov'] == '青海省']
-        data = data[['Lat', 'Lon', 'Year', 'Mon', 'Day', 'Hour', 'Min', 'Second', 'Lit_Current']]
-        time = {"Year": data["Year"], "Month": data["Mon"], "Day": data["Day"], "Hour": data["Hour"], "Minute": data["Min"], "Second": data["Second"]}
-        data['Datetime'] = pd.to_datetime(time)
+    def adtd_data_proccessing(data, years):
+        data['Datetime'] = pd.to_datetime(data['Datetime'])
         data.set_index('Datetime', inplace=True)
         data.sort_index(inplace=True)
+        data['Lon'] = data['Lon'].astype(float)
+        data['Lat'] = data['Lat'].astype(float)
+        data.rename(columns={'强度': 'Lit_Current'}, inplace=True)
+        data['Year'] = data.index.year
+        data['Mon'] = data.index.month
+        data['Day'] = data.index.day
+
+        start_year = years.split(',')[0]
+        end_year = years.split(',')[1]
+        data = data[data.index.year >= int(start_year)]
+        data = data[data.index.year <= int(end_year)]
 
         if 'Unnamed: 0' in data.columns:
             data.drop(['Unnamed: 0'], axis=1, inplace=True)
-
+        
         return data
 
-    start_lon = 100.8
-    end_lon = 101.9
-    start_lat = 36.2
-    end_lat = 37.5
-    resolution = 0.005
-    path = r'C:/Users/MJY/Desktop/adtd.csv'
-    df = pd.read_csv(path)
-    df = adtd_data_proccessing(df)
-    point_list = [[101.25,37.02],[101.349,37.31]]
-    save_path = r'C:/Users/MJY/Desktop/adtd'
-    light_density_picture = light_density(df, start_lon, start_lat, end_lon, end_lat, resolution, point_list, save_path)
+    adtd_df = pd.read_csv(cfg.FILES.ADTD)
+    adtd_df = adtd_data_proccessing(adtd_df, '2000,2025')
+
+    point_list = [[87,43]]
+    light_density_picture = light_density(adtd_df, start_lon=73, start_lat=34, end_lon=96, end_lat=49, point_list=point_list, resolution=0.005, save_path=r'C:\Users\mjynj\Desktop\aaa')

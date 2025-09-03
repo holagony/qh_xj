@@ -18,6 +18,7 @@ elif os.name == 'posix':
     flag = 'HX'
 else:
     flag = 'HX'
+
 # 信息配置
 __C.INFO = edict()
 __C.INFO.NUM_THREADS = 30  # 多线程数量
@@ -25,9 +26,9 @@ __C.INFO.MAPBOX_TOKEN = 'pk.eyJ1IjoiZGFpbXUiLCJhIjoiY2x3MWV6Y3YxMDF5aDJxcWI2c3c3
 
 if flag == 'HX': # 公司服务器
     __C.INFO.IN_UPLOAD_FILE = '/zipdata' # 上传数据路径
-    __C.INFO.OUT_UPLOAD_FILE = '/mnt/PRESKY/project/bgdb/qihou/zipdata'
+    __C.INFO.OUT_UPLOAD_FILE = '/mnt/PRESKY/project/bgdb/xinjiang-feasibility/zipdata'
     __C.INFO.IN_DATA_DIR = '/data' # 容器内保存文件夹
-    __C.INFO.OUT_DATA_DIR = '/home/bgdb/dockercp/qhkxxlz/data' # 容器外挂载保存文件夹
+    __C.INFO.OUT_DATA_DIR = '/home/hadoop/data_center/apicode/qh_xj/data' # 容器外挂载保存文件夹
     __C.INFO.OUT_DATA_URL = 'http://221.122.67.145:8889/xj-feasibility/img'
     __C.INFO.REDIS_HOST = '192.168.1.119'
     __C.INFO.REDIS_PORT = '8086'
@@ -97,6 +98,7 @@ __C.FILES.PRE_MIN = os.path.join(data_file_dir, 'test_data/rain_min')
 __C.FILES.ADTD = os.path.join(data_file_dir, 'adtd_xj.csv')
 __C.FILES.ADTD_PARAM = os.path.join(data_file_dir, 'adtd_parameters.csv')
 __C.FILES.ADTD_FACTOR = os.path.join(data_file_dir, 'adtd_factors.npy')
+__C.FILES.XJ_DEM = os.path.join(data_file_dir, 'xj_dem.nc')
 
 # report
 __C['report'] = dict()
