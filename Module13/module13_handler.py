@@ -67,7 +67,8 @@ def rain_step1(data_json):
         R_path = glob.glob(os.path.join(R_path, '*.DAT'))[0]
         input_path['R'] = R_path
 
-    print('处理后的分钟数据路径是: ' + input_path)
+    print('处理后的分钟数据路径是:')
+    print(input_path)
 
     # 生成结果
     # 输出的给后续步骤计算的pickle和csv文件路径都在容器内，不用改动
@@ -89,7 +90,7 @@ def rain_step1(data_json):
 
     except Exception as e:
         logging.exception(e)
-        raise Exception('error')
+        raise
 
     return result_dict
 
@@ -169,7 +170,7 @@ def rain_step2(data_json):
 
     except Exception as e:
         logging.exception(e)
-        raise Exception('error')
+        raise
 
     return result_dict
 

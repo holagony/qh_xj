@@ -394,7 +394,6 @@ def plot_all_in_one(rain_intensity, result_dict, img_path, mode):
     ax.set_ylabel('雨强 (mm/min)', fontproperties=font)
     ax.set_xscale('prob')
     ax.set_xlim(0.01, 99.5)
-    ax.set_ylim(0, 6)
     ax.grid(True)
     plt.xticks(size=5)
     
@@ -409,6 +408,9 @@ def plot_all_in_one(rain_intensity, result_dict, img_path, mode):
     empi_prob = (np.arange(n)+1)/(n+1)*100
     sample_x = np.linspace(0.01, 99.5, 1000)
     
+    # 用于收集所有y值以动态设置y轴范围
+    all_y_values = []
+    
     # 循环读取数据画图
     during_times = list(result_dict.keys())[1:] # 0-180 [1:12]
     for during_time in during_times:
@@ -417,18 +419,27 @@ def plot_all_in_one(rain_intensity, result_dict, img_path, mode):
         data = rain_intensity.loc[:,during_time].values
         data_sort = np.sort(data)[::-1]
         ax.scatter(empi_prob, data_sort, marker='o', s=1)
+        all_y_values.extend(data_sort)
 
         if mode == 0:
             theo_y = gumbel_r.ppf(1-sample_x/100, loc=distr_dict['loc'], scale=distr_dict['scale'])
             ax.plot(sample_x, theo_y, '-', lw=0.8, label=during_time)
+            all_y_values.extend(theo_y)
         
         elif mode == 6:
             theo_y = expon.ppf(1-sample_x/100, loc=distr_dict['expon_loc'], scale=distr_dict['expon_scale'])
             ax.plot(sample_x, theo_y, '-', lw=0.8, label=during_time)
+            all_y_values.extend(theo_y)
             
         else:
             theo_y = (pearson3.ppf(1-sample_x/100, distr_dict['cs'])*distr_dict['cv']+1)*distr_dict['ex']
             ax.plot(sample_x, theo_y, '-', lw=0.8, label=during_time)
+            all_y_values.extend(theo_y)
+    
+    # 动态设置y轴范围
+    y_min = max(0, min(all_y_values) * 0.95)  # 最小值留5%边距，但不小于0
+    y_max = max(all_y_values) * 1.05  # 最大值留5%边距
+    ax.set_ylim(y_min, y_max)
     
     ax.legend(prop=font)    
     save_path = img_path+'/mode{}_all_line.png'.format(str(mode))

@@ -10,47 +10,47 @@ from Utils.ordered_easydict import OrderedEasyDict as edict
 
 def get_year_data(df, num_year):
     '''
-    提取每一年的数据，变成df
+    提取每一年的数据，变成df - 优化版本
     '''
-    year_df = df[df['year'] == num_year]
+    year_df = df[df['year'] == num_year].copy()
     year_df = year_df.set_index(['station', 'year', 'month', 'day', 'hour']).stack().reset_index()
     year_df.rename(columns={'level_5': 'minute', 0: 'pre'}, inplace=True)
-    year_df['minute'] = year_df['minute'].apply(lambda x: int(x[:-3]) - 1)
+    
+    # 优化：使用向量化操作替代apply
+    year_df['minute'] = year_df['minute'].str[:-3].astype(int) - 1
     year_df = year_df[['station', 'year', 'month', 'day', 'hour', 'minute', 'pre']]
-    year_df['time'] = year_df['year'].map(str) + '-' + year_df['month'].map(str) + '-' + year_df['day'].map(str) + '-' + year_df['hour'].map(str) + '-' + year_df['minute'].map(str)
-    year_df['time'] = pd.to_datetime(year_df['time'], format='%Y-%m-%d-%H-%M')
+    
+    # 优化：直接使用pd.to_datetime，避免字符串拼接
+    year_df['time'] = pd.to_datetime(year_df[['year', 'month', 'day', 'hour', 'minute']])
 
     return year_df
 
 
 def divide_rain(year_df, interval):
     '''
-    对每一年的数据进行划分场雨
+    对每一年的数据进行划分场雨 - 优化版本
     '''
-    data_noZero = year_df[year_df['pre'] != 0]
-    data_noZero = data_noZero.dropna()
+    data_noZero = year_df[year_df['pre'] != 0].dropna()
 
     if len(data_noZero) == 0:
-        rain_list = []
+        return []
 
-    else:
-        timeStamp = data_noZero.index
-        timeNode = [timeStamp[0]]
-
-        rain_idx = []
-        for i in range(1, len(timeStamp)):
-            diff = timeStamp[i] - timeStamp[i - 1]
-            if diff >= interval:
-                rain_idx.append([timeNode[-1], timeStamp[i - 1]])
-                timeNode.append(timeStamp[i])
-
-        rain_list = []  # 所有场雨的列表
-        for j in range(len(rain_idx)):
-            start = rain_idx[j][0]
-            end = rain_idx[j][1]
-            rain = year_df[start:end + 1]
-            rain_list.append(rain)
-
+    timeStamp = data_noZero.index.values
+    
+    # 优化：使用numpy向量化操作计算时间差
+    if len(timeStamp) == 1:
+        return [year_df.iloc[timeStamp[0]:timeStamp[0]+1]]
+    
+    diffs = np.diff(timeStamp)
+    break_points = np.where(diffs >= interval)[0]
+    
+    # 构建雨段的起始和结束索引
+    starts = np.concatenate([[timeStamp[0]], timeStamp[break_points + 1]])
+    ends = np.concatenate([timeStamp[break_points], [timeStamp[-1]]])
+    
+    # 批量创建雨段列表
+    rain_list = [year_df.iloc[start:end + 1] for start, end in zip(starts, ends)]
+    
     return rain_list
 
 
@@ -94,30 +94,33 @@ def step1_run(input_path, pickle_out_path, pre_threshold=None, start_year=None, 
     # 创建结果保存字典
     result = edict()
 
-    # 划分场雨
+    # 划分场雨 - 优化版本
+    interval = [120, 150, 180, 240, 360, 720, 1440]
+    
     for i in range(start_year, end_year + 1):
         result[str(i)] = dict()
         df = get_year_data(rain_total_df, i)  # 一年的降水数据
-        interval=[120,150,180,240,360,720,1440]
 
         for inr in interval:
             rain_list = divide_rain(df, inr)
             result[str(i)][str(inr) + 'min_interval'] = edict()
             result[str(i)][str(inr) + 'min_interval']['each_rain'] = rain_list
 
-            table = pd.DataFrame(columns=['开始时间', '结束时间', '时长', '总雨量', '第几场雨'])
-
-            if rain_list != []:
+            # 优化：批量处理表格数据，避免逐行添加
+            if rain_list:
+                table_data = []
                 for num, rain in enumerate(rain_list):
                     first_time = rain.iloc[0, -1].strftime('%Y-%m-%d %H:%M:%S')
                     last_time = rain.iloc[-1, -1].strftime('%Y-%m-%d %H:%M:%S')
                     total_time = len(rain)
                     total_pre = rain['pre'].sum()
-
-                    df_row = table.shape[0]
-                    table.loc[df_row] = [first_time, last_time, total_time, total_pre, num]
-
-            table = table.round(2)
+                    table_data.append([first_time, last_time, total_time, total_pre, num])
+                
+                table = pd.DataFrame(table_data, columns=['开始时间', '结束时间', '时长', '总雨量', '第几场雨'])
+                table = table.round(2)
+            else:
+                table = pd.DataFrame(columns=['开始时间', '结束时间', '时长', '总雨量', '第几场雨'])
+            
             result[str(i)][str(inr) + 'min_interval']['table'] = table
 
     # 保存结果为pickle，供后面的步骤程序读取
@@ -126,25 +129,19 @@ def step1_run(input_path, pickle_out_path, pre_threshold=None, start_year=None, 
 
     result['pickle'] = pickle_out_path + '/step1_result.txt'
 
-    # 处理result里面的时间格式、删除字典里面的each_rain key
-    result_json = copy.deepcopy(result)
-
-    for year, sub_dict in result_json.items():
+    # 处理result里面的时间格式、删除字典里面的each_rain key - 优化版本
+    result_json = edict()
+    result_json['pickle'] = result['pickle']
+    
+    # 优化：避免深拷贝，直接构建需要的数据结构
+    for year, sub_dict in result.items():
         if year != 'pickle':
+            result_json[year] = {}
             for inr, rain_info in sub_dict.items():
-                rain_info.pop('each_rain', None)
-
-                for key, val in rain_info.items():
-                    rain_info['table'] = val.to_dict(orient='records')
-
-                    # 处理each_rain里面每个df的时间格式
-                    # elif key == 'each_rain':
-                    #     temp = edict()
-                    #     for num,df in enumerate(val):
-                    #         df = df.reset_index(drop=True).copy()
-                    #         df['time'] = df['time'].dt.strftime('%Y-%m-%d %H:%M:%S')
-                    #         temp[str(num)] = df.to_dict(orient='records')
-                    #     rain_info[key] = temp
+                # 直接转换table为字典格式，跳过each_rain
+                result_json[year][inr] = {
+                    'table': rain_info['table'].to_dict(orient='records')
+                }
 
     return result_json, start_year, end_year, st_id
 
