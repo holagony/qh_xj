@@ -11,6 +11,7 @@ from Utils.data_processing import daily_data_processing
 from Module01.wrapped.time_consistency_analysis import time_analysis
 from Module01.wrapped.spatial_consistency_analysis import space_analysis
 from Module01.wrapped.correlation_analysis import correlation_analysis
+from Report.code.Module01.time_consistency_report import time_consistency_report
 from Report.code.Module01.correlation_analysis_report import correlation_analysis_report
 from Report.code.Module01.spatial_consistency_report import spatial_consistency_report
 from Utils.get_url_path import save_cmadaas_data
@@ -67,10 +68,17 @@ def time_consistency_handler(data_json):
     try:
         result_dict = time_analysis(daily_df, elements, method, sta_ids, seq_len)
         result_dict['uuid'] = uuid4
+        
+        try:
+            report_path = time_consistency_report(result_dict,sta_ids,daily_df['Station_Name'].iloc[0],data_dir)
+            report_path = report_path.replace(cfg.INFO.IN_DATA_DIR, cfg.INFO.OUT_DATA_DIR)
+            result_dict['report'] = report_path.replace(cfg.INFO.OUT_DATA_DIR, cfg.INFO.OUT_DATA_URL)
+        except:
+            result_dict['report'] = None
+            
     except Exception as e:
         logging.exception(e)
         raise Exception('现有获取的数据不能满足突变检验计算条件，无法得到计算结果')
-
     if cfg.INFO.SAVE_RESULT:
         result_dict['csv'] = save_cmadaas_data(data_dir, day_data=daily_df)
 
@@ -250,3 +258,39 @@ if __name__ == '__main__':
     data_json["method"]= ["ratio"]
     
     result_dict = calc_correlation_daily_data_handler(data_json)
+    
+    
+    data_json={
+  "years": "2000,2020",
+  "station_ids": [
+    "52863"
+  ],
+  "staValueName": [
+    [
+      "青海省",
+      "海东市",
+      "互助土族自治县",
+      "52863"
+    ]
+  ],
+  "staValue": "国家站",
+  "stationName": "[52863]互助",
+  "elements": [
+    "PRS_Avg",
+    "PRS_Max",
+    "PRS_Min",
+    "TEM_Avg",
+    "TEM_Max",
+    "TEM_Min",
+    "RHU_Avg",
+    "PRE_Time_2020",
+    "WIN_S_2mi_Avg",
+    "WIN_S_Max"
+  ],
+  "method": [
+    "mk",
+    "slide_t"
+  ],
+  "seq_len": 5,
+  "is_async": 0
+}
