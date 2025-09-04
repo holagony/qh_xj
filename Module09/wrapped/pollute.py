@@ -73,7 +73,7 @@ def basic_win_freq_statistics(win_freq):
         try:
             # 累年各月风向对应的风速
             win_d_s = win_freq[[
-                'WIN_S_Avg_NNE', 'WIN_S_Avg_NE', 'WIN_S_Avg_ENE', 'WIN_S_Avg_E', 'WIN_S_Avg_ESE', 'WIN_S_Avg_SE', 'WIN_S_Avg_SSE', 'WIN_S_Avg_S', 'WIN_S_Avg_SSW', 'WIN_S_Avg_SW', 'WIN_S_Avg_WSW', 'WIN_S_Avg__W', 'WIN_S_Avg_WNW', 'WIN_S_Avg_NW',
+                'WIN_S_Avg_NNE', 'WIN_S_Avg_NE', 'WIN_S_Avg_ENE', 'WIN_S_Avg_E', 'WIN_S_Avg_ESE', 'WIN_S_Avg_SE', 'WIN_S_Avg_SSE', 'WIN_S_Avg_S', 'WIN_S_Avg_SSW', 'WIN_S_Avg_SW', 'WIN_S_Avg_WSW', 'WIN_S_AVG_W', 'WIN_S_Avg_WNW', 'WIN_S_Avg_NW',
                 'WIN_S_Avg_NNW', 'WIN_S_Avg__N'
             ]]
             mean_win_s_accum = []
@@ -318,22 +318,27 @@ def pollute_run(post_monthly_df):
 
     # 污染系数
     basic_win_d_accum, basic_win_s_accum = basic_win_freq_statistics(post_monthly_df)
-    basic_win_d_accum.insert(loc=1, column='要素', value='风向频率(%)')
-    basic_win_s_accum.insert(loc=1, column='要素', value='平均风速(m/s)')
-    basic_win_d_accum.drop(['C'], axis=1, inplace=True)
+    
+    # 检查返回值是否为None，如果是则污染系数部分设为None
+    if basic_win_d_accum is None or basic_win_s_accum is None:
+        result = None
+    else:
+        basic_win_d_accum.insert(loc=1, column='要素', value='风向频率(%)')
+        basic_win_s_accum.insert(loc=1, column='要素', value='平均风速(m/s)')
+        basic_win_d_accum.drop(['C'], axis=1, inplace=True)
 
-    basic_wu_accum = round(basic_win_d_accum.iloc[:, 2::] / basic_win_s_accum.iloc[:, 2::], 2)
-    basic_wu_accum.insert(loc=0, column='月份', value=basic_win_s_accum['月份'])
-    basic_wu_accum.insert(loc=1, column='要素', value='污染系数')
+        basic_wu_accum = round(basic_win_d_accum.iloc[:, 2::] / basic_win_s_accum.iloc[:, 2::], 2)
+        basic_wu_accum.insert(loc=0, column='月份', value=basic_win_s_accum['月份'])
+        basic_wu_accum.insert(loc=1, column='要素', value='污染系数')
 
-    merged_rows = []
+        merged_rows = []
 
-    for i in range(len(basic_win_d_accum)):
-        merged_rows.append(basic_win_d_accum.iloc[i])
-        merged_rows.append(basic_win_s_accum.iloc[i])
-        merged_rows.append(basic_wu_accum.iloc[i])
+        for i in range(len(basic_win_d_accum)):
+            merged_rows.append(basic_win_d_accum.iloc[i])
+            merged_rows.append(basic_win_s_accum.iloc[i])
+            merged_rows.append(basic_wu_accum.iloc[i])
 
-    result = pd.concat(merged_rows, axis=1).transpose()
+        result = pd.concat(merged_rows, axis=1).transpose()
 
     # 混合层高度
     data_depth_mixed, depth_mixed_accum = depth_mixed_layer(post_monthly_df)
