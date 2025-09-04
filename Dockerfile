@@ -54,7 +54,6 @@ RUN wget --quiet https://mirrors.tuna.tsinghua.edu.cn/anaconda/miniconda/Minicon
 # make non-activate conda commands available
 ENV PATH=$CONDA_DIR/bin:$PATH
 
-
 # 配置conda并构建环境（合并所有操作以减少镜像层数）
 RUN conda init bash \
     && conda config --add channels pytorch \
@@ -77,26 +76,12 @@ RUN conda init bash \
 
 WORKDIR $APP_DIR
 
-# RUN PIP_EXISTS_ACTION=w conda clean -i && conda env create -n road --file /tmp/environment.yml --force \
-#     && conda clean --all --yes \
-#     && rm -rf $CONDA_DIR/pkgs/*
-
-# 可以不用 activate the road env
-# SHELL ["conda", "run", "-n", "road", "/bin/bash", "-c"]
-## ADD CONDA ENV PATH TO LINUX PATH
 ENV PATH=$CONDA_DIR/envs/myconda/bin:$PATH
-#ENV CONDA_DEFAULT_ENV road
 
 RUN echo "conda current env is: $(conda env list)"
 
-# run the postBuild script to install the JupyterLab extensions
-#RUN conda activate $ENV_PREFIX && \
-#    /usr/local/bin/postBuild.sh && \
-#    conda deactivate
 COPY config.ini $HOME/.nmcdev/
 COPY ./Files/fonts/ /usr/share/fonts/
 COPY . .
-# use an entrypoint script to insure conda environment is properly activated at runtime
-#ENTRYPOINT [ "/usr/local/bin/entrypoint.sh" ]
 CMD ["supervisord", "-c", "./supervisor/supervisord.conf"]
 EXPOSE 5050 5555
