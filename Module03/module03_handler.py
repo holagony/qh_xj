@@ -547,13 +547,13 @@ def weather_phenomena_days(data_json):
             result_dict.DrSnow['table2'] = DrSnow_tab2
             result_dict.DrSnow['table3'] = DrSnow_tab3
 
-            # try:
-            report_path = drsnow_days_report(DrSnow_tab1, DrSnow_tab2, DrSnow_tab3, daily_df, data_dir, main_sta_ids)
-            result_path.append(report_path)
-            report_path = report_path.replace(cfg.INFO.IN_DATA_DIR, cfg.INFO.OUT_DATA_DIR)
-            result_dict.DrSnow['report'] = report_path.replace(cfg.INFO.OUT_DATA_DIR, cfg.INFO.OUT_DATA_URL)
-            # except:
-            #     result_dict.DrSnow['report'] = None
+            try:
+                report_path = drsnow_days_report(DrSnow_tab1, DrSnow_tab2, DrSnow_tab3, daily_df, data_dir, main_sta_ids)
+                result_path.append(report_path)
+                report_path = report_path.replace(cfg.INFO.IN_DATA_DIR, cfg.INFO.OUT_DATA_DIR)
+                result_dict.DrSnow['report'] = report_path.replace(cfg.INFO.OUT_DATA_DIR, cfg.INFO.OUT_DATA_URL)
+            except:
+                result_dict.DrSnow['report'] = None
 
         elif ele == 'Snow':
             result_dict.Snow = edict()
