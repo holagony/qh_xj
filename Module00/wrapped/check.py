@@ -181,6 +181,15 @@ class check:
 
             all_records = []
             for element in self.elements:
+                # 跳过空字符串元素
+                if not element or element.strip() == '':
+                    continue
+                    
+                # 检查元素是否在字典中存在
+                if element not in element_ch:
+                    logging.warning(f"Element '{element}' not found in element_ch dictionary, skipping...")
+                    continue
+                    
                 ch = element_ch[element]
                 records, time_periods = self.data_check(df_sta, element, ch)
                 all_records.append(records)

@@ -74,7 +74,7 @@ def feature_stats_handler(data_json):
         elif ele == 'WIND':
             # yearly_elements += 'WIN_S_2mi_Avg,WIN_S_Max,WIN_D_S_Max_C,V11042_067,WIN_S_Inst_Max,WIN_D_INST_Max_C,WIN_S_INST_Max_ODate_C,WIN_D_Max_C,WIN_D_Max_Freq,'
             # 检查青海和新疆，如：WIN_S_AVG_W 和 WIN_S_Avg__W
-            monthly_elements += 'WIN_S_2mi_Avg,WIN_S_Max,WIN_D_S_Max_C,WIN_S_Max_ODay_C,WIN_S_Inst_Max,WIN_D_INST_Max_C,WIN_S_INST_Max_ODay_C,WIN_D_Max_C,WIN_D_Max_Freq,WIN_NNE_Freq,WIN_NE_Freq,WIN_ENE_Freq,WIN_E_Freq,WIN_ESE_Freq,WIN_SE_Freq,WIN_SSE_Freq,WIN_S_Freq,WIN_SSW_Freq,WIN_SW_Freq,WIN_WSW_Freq,WIN_W_Freq,WIN_WNW_Freq,WIN_NW_Freq,WIN_NNW_Freq,WIN_N_Freq,WIN_C_Freq,WIN_S_Avg_NNE,WIN_S_Avg_NE,WIN_S_Avg_ENE,WIN_S_Avg_E,WIN_S_Avg_ESE,WIN_S_Avg_SE,WIN_S_Avg_SSE,WIN_S_Avg_S,WIN_S_Avg_SSW,WIN_S_Avg_SW,WIN_S_Avg_WSW,WIN_S_Avg__W,WIN_S_Avg_WNW,WIN_S_Avg_NW,WIN_S_Avg_NNW,WIN_S_Avg__N,'
+            monthly_elements += 'WIN_S_2mi_Avg,WIN_S_Max,WIN_D_S_Max_C,WIN_S_Max_ODay_C,WIN_S_Inst_Max,WIN_D_INST_Max_C,WIN_S_INST_Max_ODay_C,WIN_D_Max_C,WIN_D_Max_Freq,WIN_NNE_Freq,WIN_NE_Freq,WIN_ENE_Freq,WIN_E_Freq,WIN_ESE_Freq,WIN_SE_Freq,WIN_SSE_Freq,WIN_S_Freq,WIN_SSW_Freq,WIN_SW_Freq,WIN_WSW_Freq,WIN_W_Freq,WIN_WNW_Freq,WIN_NW_Freq,WIN_NNW_Freq,WIN_N_Freq,WIN_C_Freq,WIN_S_Avg_NNE,WIN_S_Avg_NE,WIN_S_Avg_ENE,WIN_S_Avg_E,WIN_S_Avg_ESE,WIN_S_Avg_SE,WIN_S_Avg_SSE,WIN_S_Avg_S,WIN_S_Avg_SSW,WIN_S_Avg_SW,WIN_S_Avg_WSW,WIN_S_AVG_W,WIN_S_Avg_WNW,WIN_S_Avg_NW,WIN_S_Avg_NNW,WIN_S_Avg__N,'
             daily_elements += 'WIN_S_2mi_Avg,WIN_S_Max,WIN_D_S_Max,WIN_S_Inst_Max,WIN_D_INST_Max,'
             
         elif ele == 'VAPOR':
@@ -149,24 +149,34 @@ def feature_stats_handler(data_json):
     # 5.计算之前先检测数据完整率 check h小时 D天 MS月 YS年
     years = years.split(',')
     result_dict.check_result = edict()
-    yearly_elements = yearly_elements[:-1]
-    monthly_elements = monthly_elements[:-1]
-    daily_elements = daily_elements[:-1]
+    
+    # 移除末尾逗号并过滤空字符串
+    if yearly_elements.endswith(','):
+        yearly_elements = yearly_elements[:-1]
+    if monthly_elements.endswith(','):
+        monthly_elements = monthly_elements[:-1]
+    if daily_elements.endswith(','):
+        daily_elements = daily_elements[:-1]
     
     # if yearly_df is not None and len(yearly_df) != 0 and 'VAPOR' not in elements:
-    #     checker = check(yearly_df, 'YS', yearly_elements.split(','), [sta_ids], years[0], years[1])
+    #     yearly_element_list = [e.strip() for e in yearly_elements.split(',') if e.strip()]
+    #     checker = check(yearly_df, 'YS', yearly_element_list, [sta_ids], years[0], years[1])
     #     check_result = checker.run()
     #     result_dict.check_result['使用的天擎年要素'] = check_result
 
     if monthly_df is not None and len(monthly_df) != 0:
-        checker = check(monthly_df, 'MS', monthly_elements.split(','), [sta_ids], years[0], years[1])
-        check_result = checker.run()
-        result_dict.check_result['使用的天擎月要素'] = check_result
+        monthly_element_list = [e.strip() for e in monthly_elements.split(',') if e.strip()]
+        if monthly_element_list:  # 只有当列表不为空时才进行检查
+            checker = check(monthly_df, 'MS', monthly_element_list, [sta_ids], years[0], years[1])
+            check_result = checker.run()
+            result_dict.check_result['使用的天擎月要素'] = check_result
 
     if daily_df is not None and len(daily_df) != 0:
-        checker = check(daily_df, 'D', daily_elements.split(','), [sta_ids], years[0], years[1])
-        check_result = checker.run()
-        result_dict.check_result['使用的天擎日要素'] = check_result
+        daily_element_list = [e.strip() for e in daily_elements.split(',') if e.strip()]
+        if daily_element_list:  # 只有当列表不为空时才进行检查
+            checker = check(daily_df, 'D', daily_element_list, [sta_ids], years[0], years[1])
+            check_result = checker.run()
+            result_dict.check_result['使用的天擎日要素'] = check_result
 
     # 6.结果生成
     result_list = []  # 用于生成所有保存路径
