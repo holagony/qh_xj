@@ -209,6 +209,8 @@ def weather_phenomena_days(data_json):
             if len(set(month_ele_list) & set(elements)) != 0:
                 monthly_df = get_cmadaas_monthly_data(years, monthly_elements, sta_ids)
                 monthly_df = monthly_data_processing(monthly_df, years)
+            else:
+                monthly_df = None
 
             # 日数据
             if len(set(day_ele_list) & set(elements)) != 0:
@@ -238,7 +240,7 @@ def weather_phenomena_days(data_json):
 
     # 检查数据是否为空
     if monthly_df is None and daily_df is None:
-        raise Exception('站点没有数据')
+        raise Exception('站点选择的时段里面，没有数据')
     
     # 6.结果生成
     ele_list = []  # 记录出现的要素，用于累年各月总表合成(总表1)
@@ -834,6 +836,10 @@ def init_and_end_days(data_json):
         checker = check(daily_df, 'D', daily_elements.split(','), sta_ids.split(','), years[0], years[1])
         check_result = checker.run()
         result_dict.check_result['使用的天擎日要素'] = check_result
+    
+    # 检查数据是否为空
+    if daily_df is None:
+        raise Exception('站点选择的时段里面，没有数据')
 
     # 6.结果生成
     accum_ele_list = []  # 记录出现的要素名称，用于生成初终日总表(总表2)
@@ -1117,6 +1123,10 @@ def weather_process_stats(data_json):
         checker = check(daily_df, 'D', daily_elements.split(','), sta_ids.split(','), years[0], years[1])
         check_result = checker.run()
         result_dict.check_result['使用的天擎日要素'] = check_result
+    
+    # 检查数据是否为空
+    if daily_df is None:
+        raise Exception('站点选择的时段里面，没有数据')
 
     # 6.结果生成
     result_list = []
