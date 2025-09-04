@@ -236,6 +236,10 @@ def weather_phenomena_days(data_json):
         check_result = checker.run()
         result_dict.check_result['使用的天擎日要素'] = check_result
 
+    # 检查数据是否为空
+    if monthly_df is None and daily_df is None:
+        raise Exception('站点没有数据')
+    
     # 6.结果生成
     ele_list = []  # 记录出现的要素，用于累年各月总表合成(总表1)
     result_list = []  # 用于将保存的csv，进行url转换，然后输出路径
