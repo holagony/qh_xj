@@ -703,6 +703,12 @@ def climate_comfort_main(input_df):
     气候舒适性主流程
     '''
     rank_result = np.zeros(4)
+    
+    # 初始化所有factor变量为None
+    factor_A = None
+    factor_B = None
+    factor_C = None
+    factor_D = None
 
     # 人体舒适度
     tmp = input_df[['TEM_Avg', 'RHU_Avg', 'WIN_S_2mi_Avg']]
