@@ -260,6 +260,15 @@ def yearly_data_processing(yearly_data, years):
 
     if 'WIN_D_S_Max_C' in df_data.columns:
         df_data['WIN_D_Max_C'] = df_data['WIN_D_Max_C'].astype(str).apply(wind_direction_to_symbol)
+    
+    if 'PRS_Avg' in df_data.columns:
+        df_data['PRS_Avg'] = df_data['PRS_Avg'].apply(lambda x: np.nan if (x > 1100 or x < 550) else x)
+    
+    if 'PRS_Max' in df_data.columns:
+        df_data['PRS_Max'] = df_data['PRS_Max'].apply(lambda x: np.nan if (x > 1100 or x < 550) else x)
+    
+    if 'PRS_Min' in df_data.columns:
+        df_data['PRS_Min'] = df_data['PRS_Min'].apply(lambda x: np.nan if (x > 1100 or x < 550) else x)
 
     return df_data
 
@@ -383,6 +392,15 @@ def monthly_data_processing(monthly_data, years):
     
     if 'RHU_Min' in df_data.columns:
         df_data['RHU_Min'] = df_data['RHU_Min'].apply(lambda x: np.nan if x > 100 else x)
+    
+    if 'PRS_Avg' in df_data.columns:
+        df_data['PRS_Avg'] = df_data['PRS_Avg'].apply(lambda x: np.nan if (x > 1100 or x < 550) else x)
+    
+    if 'PRS_Max' in df_data.columns:
+        df_data['PRS_Max'] = df_data['PRS_Max'].apply(lambda x: np.nan if (x > 1100 or x < 550) else x)
+    
+    if 'PRS_Min' in df_data.columns:
+        df_data['PRS_Min'] = df_data['PRS_Min'].apply(lambda x: np.nan if (x > 1100 or x < 550) else x)
 
     return df_data
 
@@ -572,59 +590,15 @@ def hourly_data_processing(hourly_data, years):
 
     if 'RHU' in df_data.columns:
         df_data['RHU'] = df_data['RHU'].apply(lambda x: np.nan if x > 100 else x)
-        
+    
+    if 'PRS' in df_data.columns:
+        df_data['PRS'] = df_data['PRS'].apply(lambda x: np.nan if (x > 1100 or x < 550) else x)
+
     # 处理为世界时
     df_data.index += pd.Timedelta(hours=8)
     # df_data = df_data[df_data.index.year<=end_year]
 
     return df_data
-
-
-def database_data_processing_module01(df, self_built_elements):
-    '''
-    数据库读取的数据格式处理，用于module01的计算
-    '''
-    self_built_elements = self_built_elements.split(',')
-    meteo_elements = ['tem_avg', 'tem_max', 'tem_min', 'rhu', 'prs', 'pre']  # module01完整的气象要素（只有一个高度）
-    diff_h_elements = ['min10_ws', 'tem']  # module01完整的不同高度层的要素
-
-    # 取两个列表交集
-    cur_meteo = ['year', 'month', 'day', 'hour'] + list(set(self_built_elements) & set(meteo_elements))
-    cur_diff_h_elements = ['year', 'month', 'day', 'hour'] + list(set(self_built_elements) & set(diff_h_elements))
-
-    data_meteo = df.loc[df['height'] == df['height'].unique()[0], cur_meteo]
-    data_meteo['Datetime'] = pd.to_datetime(data_meteo['year'].map(str) + '-' + data_meteo['month'].map(str) + '-' + data_meteo['day'].map(str) + '-' + data_meteo['hour'].map(str),
-                                            format='%Y-%m-%d-%H')
-    data_meteo.set_index('Datetime', inplace=True)
-    data_meteo = data_meteo.iloc[4:, :]  # 去掉年月日小时
-    data_meteo.dropna(how='any', inplace=True)  # 暂时这么处理一下，目前数据库数据有问题
-
-    for i, group in enumerate(list(df.groupby('height'))):
-        h = group[0]
-        group_df = group[1]
-        group_df.dropna(how='any', inplace=True)  # 暂时这么处理一下，目前数据库数据有问题
-
-        group_df = group_df[cur_diff_h_elements]
-        group_df = group_df.rename(columns={'min10_ws': str(h) + 'm_min10_ws', 'tem': str(h) + 'm_tem'})
-
-        if i == 0:
-            wind_tem = group_df
-        else:
-            wind_tem = pd.merge(wind_tem, group_df, on=['year', 'month', 'day', 'hour'])
-
-    wind_tem['Datetime'] = pd.to_datetime(wind_tem['year'].map(str) + '-' + wind_tem['month'].map(str) + '-' + wind_tem['day'].map(str) + '-' + wind_tem['hour'].map(str), format='%Y-%m-%d-%H')
-    wind_tem.set_index('Datetime', inplace=True)
-    data_wind_tem = wind_tem[wind_tem.filter(like='m_').columns]
-    data = pd.concat([data_meteo, data_wind_tem], axis=1)
-
-    return data
-
-
-# from Utils.data_loader import get_data_postgresql
-# self_built_elements = 'tem,tem_avg'
-# df = get_data_postgresql(sta_id='Z0001', time_range='2002,2003',use='module01',module01_elements=self_built_elements)
-# post_sub_df = database_data_processing_module01(df, self_built_elements)
-# tem_columns = list(post_sub_df.filter(like='m_tem').columns)
 
 
 def database_data_processing(df):
