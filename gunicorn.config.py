@@ -15,8 +15,8 @@ errorlog = '/logs/error.log'
 monkey.patch_all()
 bind = "0.0.0.0:5050"
 worker_class = "gevent"
-workers = 2
-timeout = 300
+workers = 6
+timeout = 600
 # workers = multiprocessing.cpu_count() * 2 + 1
 
 #access日志配置，更详细配置请看：https://docs.gunicorn.org/en/stable/settings.html#logging

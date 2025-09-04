@@ -316,7 +316,7 @@ if __name__ == '__main__':
     post_daily_df['WIN_D_INST_Max'] = np.random.randint(0, 361, size=len(post_daily_df)) # 极大风速风向
     post_daily_df['WIN_D_INST_Max'] = post_daily_df['WIN_D_INST_Max'].astype(str).apply(wind_direction_to_symbol)
 
-    monthly_elements = 'WIN_S_2mi_Avg,WIN_S_Max,WIN_D_S_Max_C,WIN_S_Max_ODay_C,WIN_S_Inst_Max,WIN_D_INST_Max_C,WIN_S_INST_Max_ODay_C,WIN_D_Max_C,WIN_D_Max_Freq,WIN_NNE_Freq,WIN_NE_Freq,WIN_ENE_Freq,WIN_E_Freq,WIN_ESE_Freq,WIN_SE_Freq,WIN_SSE_Freq,WIN_S_Freq,WIN_SSW_Freq,WIN_SW_Freq,WIN_WSW_Freq,WIN_W_Freq,WIN_WNW_Freq,WIN_NW_Freq,WIN_NNW_Freq,WIN_N_Freq,WIN_C_Freq,WIN_S_Avg_NNE,WIN_S_Avg_NE,WIN_S_Avg_ENE,WIN_S_Avg_E,WIN_S_Avg_ESE,WIN_S_Avg_SE,WIN_S_Avg_SSE,WIN_S_Avg_S,WIN_S_Avg_SSW,WIN_S_Avg_SW,WIN_S_Avg_WSW,WIN_S_Avg__W,WIN_S_Avg_WNW,WIN_S_Avg_NW,WIN_S_Avg_NNW,WIN_S_Avg__N,'
+    monthly_elements = 'WIN_S_2mi_Avg,WIN_S_Max,WIN_D_S_Max_C,WIN_S_Max_ODay_C,WIN_S_Inst_Max,WIN_D_INST_Max_C,WIN_S_INST_Max_ODay_C,WIN_D_Max_C,WIN_D_Max_Freq,WIN_NNE_Freq,WIN_NE_Freq,WIN_ENE_Freq,WIN_E_Freq,WIN_ESE_Freq,WIN_SE_Freq,WIN_SSE_Freq,WIN_S_Freq,WIN_SSW_Freq,WIN_SW_Freq,WIN_WSW_Freq,WIN_W_Freq,WIN_WNW_Freq,WIN_NW_Freq,WIN_NNW_Freq,WIN_N_Freq,WIN_C_Freq,WIN_S_Avg_NNE,WIN_S_Avg_NE,WIN_S_Avg_ENE,WIN_S_Avg_E,WIN_S_Avg_ESE,WIN_S_Avg_SE,WIN_S_Avg_SSE,WIN_S_Avg_S,WIN_S_Avg_SSW,WIN_S_Avg_SW,WIN_S_Avg_WSW,WIN_S_AVG_W,WIN_S_Avg_WNW,WIN_S_Avg_NW,WIN_S_Avg_NNW,WIN_S_Avg__N,'
     month_eles = ('Station_Name,Station_Id_C,Lat,Lon,Datetime,Year,Mon,' + monthly_elements[:-1]).split(',')
     post_monthly_df = get_local_data(monthly_df, sta_ids, month_eles, years, 'Month')
     

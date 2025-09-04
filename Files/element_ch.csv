@@ -420,7 +420,7 @@ WIN_S_Avg_S,S风的平均风速
 WIN_S_Avg_SSW,SSW风的平均风速
 WIN_S_Avg_SW,SW风的平均风速
 WIN_S_Avg_WSW,WSW风的平均风速
-WIN_S_Avg__W,W风的平均风速
+WIN_S_AVG_W,W风的平均风速
 WIN_S_Avg_WNW,WNW风的平均风速
 WIN_S_Avg_NW,NW风的平均风速
 WIN_S_Avg_NNW,NNW风的平均风速

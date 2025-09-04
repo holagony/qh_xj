@@ -15,9 +15,9 @@ cfg = __C
 if os.name == 'nt':
     flag = 'LOCAL'
 elif os.name == 'posix':
-    flag = 'HX'
+    flag = 'XJ'
 else:
-    flag = 'HX'
+    flag = 'XJ'
 
 # 信息配置
 __C.INFO = edict()
@@ -86,6 +86,9 @@ __C.FILES = edict()
 __C.FILES.FONT = os.path.join(data_file_dir, 'fonts/simhei.ttf')
 __C.FILES.T_DISTR_TABLE = os.path.join(data_file_dir, 't_distribution_table.csv')
 __C.FILES.ELEMENT_CH = os.path.join(data_file_dir, 'element_ch.csv')
+__C.FILES.ADTD = os.path.join(data_file_dir, 'adtd_xj.csv')
+__C.FILES.ADTD_PARAM = os.path.join(data_file_dir, 'adtd_parameters.csv')
+__C.FILES.XJ_DEM = os.path.join(data_file_dir, 'xj_dem.nc')
 
 # 样例数据路径
 __C.FILES.QH_DATA_HOUR = os.path.join(data_file_dir, 'test_data/qh_hour0.csv')
@@ -95,10 +98,7 @@ __C.FILES.QH_DATA_YEAR = os.path.join(data_file_dir, 'test_data/qh_year.csv')
 __C.FILES.QH_DATA_RADI = os.path.join(data_file_dir, 'test_data/qh_radi.csv')
 __C.FILES.WIND_TOWER = os.path.join(data_file_dir, 'test_data/格尔木风冷')
 __C.FILES.PRE_MIN = os.path.join(data_file_dir, 'test_data/rain_min')
-__C.FILES.ADTD = os.path.join(data_file_dir, 'adtd_xj.csv')
-__C.FILES.ADTD_PARAM = os.path.join(data_file_dir, 'adtd_parameters.csv')
 __C.FILES.ADTD_FACTOR = os.path.join(data_file_dir, 'adtd_factors.npy')
-__C.FILES.XJ_DEM = os.path.join(data_file_dir, 'xj_dem.nc')
 
 # report
 __C['report'] = dict()

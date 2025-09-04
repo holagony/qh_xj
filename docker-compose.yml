@@ -1,4 +1,4 @@
-version: '3.8'
+version: '3.11'
 
 services:
   xj_qhkxxlz:
@@ -8,10 +8,10 @@ services:
     ports:
       - "5000:5050"
     volumes:
-      - /home/hadoop/data_center/apicode/qh_xj/data:/data
-      - /home/hadoop/data_center/apicode/qh_xj/logs:/logs
-      - /home/hadoop/data_center/apicode/qh_xj/app:/app
-      - /mnt/PRESKY/project/bgdb/xinjiang-feasibility/zipdata:/zipdata
+      - E:/hxkj/xinjiang/data:/data
+      - E:/hxkj/xinjiang/logs:/logs
+      - E:/hxkj/xinjiang/app:/app
+      - E:/hxkj/xinjiang/zipdata:/zipdata
     extra_hosts:
       - "host.docker.internal:host-gateway"
     networks:

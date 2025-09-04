@@ -16,8 +16,6 @@ redis_info = 'redis://:' + redis_pwd + '@' + redis_host + ':' + redis_port + '/1
 broker_url = f"redis://:{PASSWORD}@{redis_host}:{redis_port}/7"
 result_backend =  f"redis://:{PASSWORD}@{redis_host}:{redis_port}/8"
 
-
-
 timezone = 'Asia/Shanghai'
 enable_utc = True
 task_routes = {'tasks.add': 'low-priority'}
@@ -25,7 +23,7 @@ task_annotations = {'tasks.add': {'rate_limit': '5/m'}}
 
 task_acks_late = True
 task_reject_on_worker_lost = True
-worker_concurrency = 2
+worker_concurrency = 4
 worker_prefetch_multiplier = 1
 worker_max_tasks_per_child = 10
 
