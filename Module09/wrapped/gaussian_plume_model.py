@@ -231,8 +231,8 @@ def gaussianPlumeModel(lon, lat, q, h, wind_s, wind_d, z1, save_path, humidify, 
 
 
 if __name__ == '__main__':
-    lon = '94.961285,94.980918'
-    lat = '36.366595,36.387004'
+    lon = '87'
+    lat = '43'
     q = '300,300'
     h = '13,23'
     wind_s = 20
@@ -241,5 +241,5 @@ if __name__ == '__main__':
     humidify = None
     acid = 'SODIUM_CHLORIDE'
     rh = 0.9
-    save_path = r'C:/Users/MJY/Desktop/result'
+    save_path = r'C:/Users/mjynj/Desktop/result'
     result_dict= gaussianPlumeModel(lon, lat, q, h, wind_s, wind_d, z1, save_path, humidify= None, acid= 'SODIUM_CHLORIDE', rh= 0.9)

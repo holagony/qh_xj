@@ -22,6 +22,9 @@ from Utils.ordered_easydict import OrderedEasyDict as edict
 from Module09.wrapped.gaussian_plume_function import gauss_plume_func
 from matplotlib.ticker import MultipleLocator
 from mpl_toolkits.mplot3d import Axes3D
+import multiprocessing
+from multiprocessing import Pool
+from functools import lru_cache
 
 
 matplotlib.use('Agg')
@@ -29,55 +32,48 @@ plt.rcParams['font.sans-serif'] = ['SimHei']
 plt.rcParams['axes.unicode_minus'] = False
 
 
-def center_geolocation(geolocations):
+@lru_cache(maxsize=128)
+def center_geolocation(geolocations_tuple):
     '''
-    多个经纬度点找中心点
+    多个经纬度点找中心点 - 优化版本
     '''
-    geolocations = geolocations.tolist()
-    x = 0
-    y = 0
-    z = 0
-    lenth = len(geolocations)
-    for lon, lat in geolocations:
-        lon = radians(float(lon))
-        lat = radians(float(lat))
-        x += cos(lat) * cos(lon)
-        y += cos(lat) * sin(lon)
-        z += sin(lat)
-
-    x = float(x / lenth)
-    y = float(y / lenth)
-    z = float(z / lenth)
+    geolocations = np.array(geolocations_tuple)
+    
+    # 向量化计算
+    lon_rad = np.radians(geolocations[:, 0])
+    lat_rad = np.radians(geolocations[:, 1])
+    
+    x = np.mean(np.cos(lat_rad) * np.cos(lon_rad))
+    y = np.mean(np.cos(lat_rad) * np.sin(lon_rad))
+    z = np.mean(np.sin(lat_rad))
 
     center_lon = round(degrees(atan2(y, x)), 6)
     center_lat = round(degrees(atan2(z, sqrt(x * x + y * y))), 6)
-    center_lonlat = [center_lon, center_lat]
+    
+    return [center_lon, center_lat]
 
-    return center_lonlat
 
-
+@lru_cache(maxsize=32)
 def generate_grid(lon, lat, dist, coors):
     '''
-    根据中心经纬度点生成经纬度网格,和XY的index网格
-    lon = 94.961285
-    lat = 36.366595
-    dist = 100 # 网格分辨率 m
-    coors = 2500 # 两侧扩展的网格数量
+    根据中心经纬度点生成经纬度网格,和XY的index网格 - 优化版本
     '''
-    # n_coord = coors * 2 + 1
-    # axis = np.linspace(-coors, coors, n_coord) #* dist
-    
-    axis=np.arange(-coors,coors+dist,dist)
+    axis = np.arange(-coors, coors + dist, dist, dtype=np.float32)
     X, Y = np.meshgrid(axis, axis)
+    
+    # 预计算常量
     R = 6378137
-    dLat = (X / R)# * dist
-    dLon = (Y / (R * np.cos(np.pi * lat / 180))) #* dist
-    # lat_grid = np.flipud((lat + dLat * 180 / np.pi).T)
-    lat_grid = (lat + dLat * 180 / np.pi).T # 不用翻转，因为Y也是由小到大
-    lon_grid = (lon + dLon * 180 / np.pi).T
-    # output = np.concatenate((lon_grid[None],lat_grid[None]),axis=0)
+    lat_rad = np.pi * lat / 180
+    cos_lat = np.cos(lat_rad)
+    
+    # 向量化计算
+    dLat = X / R
+    dLon = Y / (R * cos_lat)
+    
+    lat_grid = (lat + dLat * 180 / np.pi).T.astype(np.float32)
+    lon_grid = (lon + dLon * 180 / np.pi).T.astype(np.float32)
 
-    return X, Y, lon_grid, lat_grid
+    return X.astype(np.float32), Y.astype(np.float32), lon_grid, lat_grid
 
 
 def find_nearest_point_index(target_point, grid_array):
@@ -92,6 +88,40 @@ def find_nearest_point_index(target_point, grid_array):
     nearest_idx = np.unravel_index(np.argmin(distances), distances.shape)
 
     return nearest_idx
+
+
+def compute_stability_3d(args):
+    '''
+    计算单个稳定度等级的污染物浓度分布 - 用于多进程
+    '''
+    stab1 = args['stab1']
+    XX_shape = args['XX_shape']
+    num_stacks = args['num_stacks']
+    Q = args['Q']
+    wind_speed = args['wind_speed']
+    wind_dir = args['wind_dir']
+    XX = args['XX']
+    YY = args['YY']
+    z_grid = args['z_grid']
+    stack_x = args['stack_x']
+    stack_y = args['stack_y']
+    H = args['H']
+    
+    C_stab = np.zeros(XX_shape, dtype=np.float32)
+    for j in range(num_stacks):  # 不同的污染中心
+        C = gauss_plume_func(
+            Q=Q[j],
+            u=wind_speed,
+            dir1=wind_dir,
+            x=XX,  # 二维区域的x坐标
+            y=YY,  # 二维区域的y坐标
+            z=z_grid,  # 2d-array 对应(x,y)的高度z，地面为0
+            xs=stack_x[j],  # 起始x位置
+            ys=stack_y[j],  # 起始y位置
+            H=H[j],  # 起始污染塔的高度
+            STABILITY=stab1)  # 大气稳定度等级
+        C_stab += C
+    return stab1, C_stab
 
 
 def gaussianPlumeModel3D(lon, lat, q, h, wind_s, wind_d, z1, save_path, humidify, acid, rh):
@@ -136,7 +166,7 @@ def gaussianPlumeModel3D(lon, lat, q, h, wind_s, wind_d, z1, save_path, humidify
     lonlat = np.array(list(zip(lon_x, lat_y)))
 
     if lonlat.shape[0] != 1:  # 如果多个经纬度点，计算中心经纬度点，用于图像定位
-        center_lonlat = center_geolocation(lonlat)
+        center_lonlat = center_geolocation(tuple(map(tuple, lonlat)))
     else:
         center_lonlat = [lon_x[0], lat_y[0]]
 
@@ -171,24 +201,42 @@ def gaussianPlumeModel3D(lon, lat, q, h, wind_s, wind_d, z1, save_path, humidify
     XX=X[int(y_center_min-1000/res):int(y_center_max+1000/res+1):,int(x_center_min):int(11000/res+1):]
     YY=Y[int(y_center_min-1000/res):int(y_center_max+1000/res+1):,int(x_center_min):int(11000/res+1):]
 
-    C1 = np.zeros((XX.shape[0], XX.shape[1], len(stability_str1)))
+    C1 = np.zeros((XX.shape[0], XX.shape[1], len(stability_str1)), dtype=np.float32)
     print(C1.shape)
 
-    z_grid = np.zeros(np.shape(XX)) + z1
-    for stab1 in tqdm(np.arange(len(stability_str1))):
-        for j in range(num_stacks):  # 不同的污染中心
-            C = gauss_plume_func(
-                Q=Q[j],
-                u=wind_speed,
-                dir1=wind_dir,
-                x=XX,  # 二维区域的x坐标
-                y=YY,  # 二维区域的y坐标
-                z=z_grid,  # 2d-array 对应(x,y)的高度z，地面为0
-                xs=stack_x[j],  # 起始x位置
-                ys=stack_y[j],  # 起始y位置
-                H=H[j],  # 起始污染塔的高度
-                STABILITY=stab1)  # 大气稳定度等级
-            C1[:, :, stab1] = C1[:, :, stab1] + C
+    z_grid = np.full(np.shape(XX), z1, dtype=np.float32)
+    
+    # 准备多进程计算参数
+    compute_args = []
+    for stab1 in range(len(stability_str1)):
+        args = {
+            'stab1': stab1,
+            'XX_shape': XX.shape,
+            'num_stacks': num_stacks,
+            'Q': Q,
+            'wind_speed': wind_speed,
+            'wind_dir': wind_dir,
+            'XX': XX,
+            'YY': YY,
+            'z_grid': z_grid,
+            'stack_x': stack_x,
+            'stack_y': stack_y,
+            'H': H
+        }
+        compute_args.append(args)
+    
+    # 使用多进程计算
+    num_cores = min(multiprocessing.cpu_count(), len(stability_str1))
+    if num_cores > 1:
+        with Pool(processes=num_cores) as pool:
+            results = pool.map(compute_stability_3d, compute_args)
+    else:
+        # 单核处理
+        results = [compute_stability_3d(args) for args in compute_args]
+    
+    # 将结果合并
+    for stab1, C_stab in results:
+        C1[:, :, stab1] = C_stab
 
     if humidify is not None:
         aerosol_type = params_dict[acid] - 1
@@ -204,10 +252,14 @@ def gaussianPlumeModel3D(lon, lat, q, h, wind_s, wind_d, z1, save_path, humidify
         C1 = C1 * mass2 / mass
     
 
-    # Plot
+    # Plot - 优化绘图性能
     result_dict = dict()
+    
+    # 预计算通用参数
+    conversion_factor = 1000  # g/m³ 转换为 mg/m³
+    
     for i in range(6):
-        contour_data = C1[:, :, i] * 1000  # 将 g/m³ 转换为 mg/m³
+        contour_data = C1[:, :, i] * conversion_factor
         fig = plt.figure(figsize=(12,8))
         # 设置图形背景为白色
         fig.patch.set_facecolor('white')
@@ -234,8 +286,12 @@ def gaussianPlumeModel3D(lon, lat, q, h, wind_s, wind_d, z1, save_path, humidify
         vmax = np.max(contour_data)
         ticks = np.linspace(vmin, vmax, 10)  # 固定10个刻度
         
-        surf = ax.plot_surface(XX, YY, contour_data, cmap=custom_cmap, 
-                             rstride=4, cstride=4, vmin=vmin, vmax=vmax)
+        # 优化绘图性能：减少数据点
+        stride = max(1, min(XX.shape[0] // 50, XX.shape[1] // 50))
+        surf = ax.plot_surface(XX[::stride, ::stride], YY[::stride, ::stride], 
+                             contour_data[::stride, ::stride], cmap=custom_cmap, 
+                             rstride=1, cstride=1, vmin=vmin, vmax=vmax, 
+                             antialiased=False, shade=True)
 
         ax.set_xlim(np.min(XX[0,:]),np.max(XX[0,:]))
         ax.set_ylim(np.min(YY[:,0]),np.max(YY[:,0]))
@@ -316,8 +372,10 @@ def gaussianPlumeModel3D(lon, lat, q, h, wind_s, wind_d, z1, save_path, humidify
                  bbox=dict(facecolor='white', alpha=0.7, edgecolor='none'))
         
         result_picture = os.path.join(save_path, 'plume_大气稳定度_3D_' + stability_str1[i][0] +  '.png')
-        fig.savefig(result_picture, dpi=200, bbox_inches='tight', pad_inches=0.3)
+        fig.savefig(result_picture, dpi=150, bbox_inches='tight', pad_inches=0.3, 
+                   facecolor='white', edgecolor='none')
         plt.cla()
+        plt.close(fig)  # 显式关闭图形以释放内存
 
         result_dict[stability_str1[i]] = result_picture
 
@@ -327,8 +385,8 @@ def gaussianPlumeModel3D(lon, lat, q, h, wind_s, wind_d, z1, save_path, humidify
 
 
 if __name__ == '__main__':
-    lon = '94.961285'
-    lat = '36.366595'
+    lon = '87'
+    lat = '43'
     q = '3000'
     h = '210'
     wind_s = 20
@@ -337,5 +395,5 @@ if __name__ == '__main__':
     humidify = None
     acid = 'SODIUM_CHLORIDE'
     rh = 0.9
-    save_path = r'C:/Users/MJY/Desktop/result'
+    save_path = r'C:/Users/mjynj/Desktop/result'
     result_dict_3d = gaussianPlumeModel3D(lon, lat, q, h, wind_s, wind_d, z1, save_path, humidify= None, acid= 'SODIUM_CHLORIDE', rh= 0.9)

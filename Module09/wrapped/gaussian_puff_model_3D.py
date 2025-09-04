@@ -24,61 +24,55 @@ from matplotlib.ticker import MultipleLocator
 from mpl_toolkits.mplot3d import Axes3D
 import multiprocessing
 from multiprocessing import Pool
+from functools import lru_cache
 
 matplotlib.use('Agg')
 plt.rcParams['font.sans-serif'] = ['SimHei']
 plt.rcParams['axes.unicode_minus'] = False
 
 
-def center_geolocation(geolocations):
+@lru_cache(maxsize=128)
+def center_geolocation(geolocations_tuple):
     '''
-    多个经纬度点找中心点
+    多个经纬度点找中心点 - 优化版本
     '''
-    geolocations = geolocations.tolist()
-    x = 0
-    y = 0
-    z = 0
-    lenth = len(geolocations)
-    for lon, lat in geolocations:
-        lon = radians(float(lon))
-        lat = radians(float(lat))
-        x += cos(lat) * cos(lon)
-        y += cos(lat) * sin(lon)
-        z += sin(lat)
-
-    x = float(x / lenth)
-    y = float(y / lenth)
-    z = float(z / lenth)
+    geolocations = np.array(geolocations_tuple)
+    
+    # 向量化计算
+    lon_rad = np.radians(geolocations[:, 0])
+    lat_rad = np.radians(geolocations[:, 1])
+    
+    x = np.mean(np.cos(lat_rad) * np.cos(lon_rad))
+    y = np.mean(np.cos(lat_rad) * np.sin(lon_rad))
+    z = np.mean(np.sin(lat_rad))
 
     center_lon = round(degrees(atan2(y, x)), 6)
     center_lat = round(degrees(atan2(z, sqrt(x * x + y * y))), 6)
-    center_lonlat = [center_lon, center_lat]
+    
+    return [center_lon, center_lat]
 
-    return center_lonlat
 
-
+@lru_cache(maxsize=32)
 def generate_grid(lon, lat, dist, coors):
     '''
-    根据中心经纬度点生成经纬度网格,和XY的index网格
-    lon = 94.961285
-    lat = 36.366595
-    dist = 100 # 网格分辨率 m
-    coors = 2500 # 两侧扩展的网格数量
+    根据中心经纬度点生成经纬度网格,和XY的index网格 - 优化版本
     '''
-    # n_coord = coors * 2 + 1
-    # axis = np.linspace(-coors, coors, n_coord)
-    # X, Y = np.meshgrid(axis, axis)
-    axis = np.arange(-coors, coors + dist, dist)
+    axis = np.arange(-coors, coors + dist, dist, dtype=np.float32)
     X, Y = np.meshgrid(axis, axis)
+    
+    # 预计算常量
     R = 6378137
-    dLat = (X / R) * dist
-    dLon = (Y / (R * np.cos(np.pi * lat / 180))) * dist
-    # lat_grid = np.flipud((lat + dLat * 180 / np.pi).T)
-    lat_grid = (lat + dLat * 180 / np.pi).T  # 不用翻转，因为Y也是由小到大
-    lon_grid = (lon + dLon * 180 / np.pi).T
-    # output = np.concatenate((lon_grid[None],lat_grid[None]),axis=0)
+    lat_rad = np.pi * lat / 180
+    cos_lat = np.cos(lat_rad)
+    
+    # 向量化计算
+    dLat = X / R * dist
+    dLon = Y / (R * cos_lat) * dist
+    
+    lat_grid = (lat + dLat * 180 / np.pi).T.astype(np.float32)
+    lon_grid = (lon + dLon * 180 / np.pi).T.astype(np.float32)
 
-    return X, Y, lon_grid, lat_grid
+    return X.astype(np.float32), Y.astype(np.float32), lon_grid, lat_grid
 
 
 def find_nearest_point_index(target_point, grid_array):
@@ -171,7 +165,8 @@ def gaussianPuffModel3D(lon, lat, q, h, wind_s, wind_d, z1, save_path, t, delt_t
     lonlat = np.array(list(zip(lon_x, lat_y)))
 
     if lonlat.shape[0] != 1:  # 如果多个经纬度点，计算中心经纬度点，用于图像定位
-        center_lonlat = center_geolocation(lonlat)
+        geolocations_tuple = tuple(tuple(row) for row in lonlat)
+        center_lonlat = center_geolocation(geolocations_tuple)
     else:
         center_lonlat = [lon_x[0], lat_y[0]]
 
@@ -202,8 +197,8 @@ def gaussianPuffModel3D(lon, lat, q, h, wind_s, wind_d, z1, save_path, t, delt_t
     y_center_min=np.min(stack_yy)
     y_center_max=np.max(stack_yy)
     
-    XX=X[int(y_center_min-1000/res):int(y_center_max+1000/res+1):,int(x_center_min):int(8000/res+1):]
-    YY=Y[int(y_center_min-1000/res):int(y_center_max+1000/res+1):,int(x_center_min):int(8000/res+1):]
+    XX=X[int(y_center_min-1000/res):int(y_center_max+1000/res+1):,int(x_center_min):int(11000/res+1):]
+    YY=Y[int(y_center_min-1000/res):int(y_center_max+1000/res+1):,int(x_center_min):int(11000/res+1):]
 
     C1 = np.zeros((XX.shape[0], XX.shape[1], len(stability_str1)))
     print(C1.shape)
@@ -242,7 +237,7 @@ def gaussianPuffModel3D(lon, lat, q, h, wind_s, wind_d, z1, save_path, t, delt_t
         mass2 = nw * Mw + moles * Ms[aerosol_type]
         C1 = C1 * mass2 / mass
 
-    # 使用多进程计算不同稳定度
+    # 优化的多进程计算不同稳定度
     stability_args = []
     for stab1 in range(len(stability_str1)):
         args = (stab1, XX, YY, z, num_stacks, Q, wind_speed, wind_dir, 
@@ -250,10 +245,14 @@ def gaussianPuffModel3D(lon, lat, q, h, wind_s, wind_d, z1, save_path, t, delt_t
         stability_args.append(args)
 
     # 使用多进程计算不同稳定度
-    # n_cores = multiprocessing.cpu_count() - 1  # 保留一个核心给系统
-    n_cores = 6
-    with Pool(processes=n_cores) as pool:
-        results = pool.map(process_stability, stability_args)
+    n_cores = min(6, multiprocessing.cpu_count() - 1, len(stability_str1))
+    
+    if n_cores > 1:
+        with Pool(processes=n_cores) as pool:
+            results = pool.map(process_stability, stability_args)
+    else:
+        # 单核处理
+        results = [process_stability(args) for args in stability_args]
     
     # 将结果组装到C1中
     C1 = np.stack(results, axis=-1)
@@ -280,16 +279,27 @@ def gaussianPuffModel3D(lon, lat, q, h, wind_s, wind_d, z1, save_path, t, delt_t
         # 设置网格线
         ax.grid(True, linestyle='--', alpha=0.3, color='gray')
         
-        # 使用magma_r配色方案
-        custom_cmap = plt.cm.magma_r
-        
-        # 计算颜色条的范围和刻度
-        vmin = 0  # 强制最小值为0
-        vmax = np.max(contour_data)
-        ticks = np.linspace(vmin, vmax, 10)  # 固定10个刻度
-        
-        surf = ax.plot_surface(XX, YY, contour_data, cmap=custom_cmap, 
-                             rstride=4, cstride=4, vmin=vmin, vmax=vmax)
+        # 优化的绘图性能
+        if np.max(contour_data) > 0:  # 跳过空数据
+            # 使用magma_r配色方案
+            custom_cmap = plt.cm.magma_r
+            
+            # 计算颜色条的范围和刻度
+            vmin = 0  # 强制最小值为0
+            vmax = np.max(contour_data)
+            ticks = np.linspace(vmin, vmax, 10)  # 固定10个刻度
+            
+            # 降采样以提高性能
+            step = max(1, min(XX.shape[0], XX.shape[1]) // 100)
+            XX_sampled = XX[::step, ::step]
+            YY_sampled = YY[::step, ::step]
+            contour_sampled = contour_data[::step, ::step]
+            
+            surf = ax.plot_surface(XX_sampled, YY_sampled, contour_sampled, cmap=custom_cmap, 
+                                 rstride=1, cstride=1, vmin=vmin, vmax=vmax, alpha=0.8)
+        else:
+            print(f"Warning: No valid concentration data for stability {stability_str1[i]}")
+            continue
 
         ax.set_xlim(np.min(XX[0,:]), np.max(XX[0,:]))
         ax.set_ylim(np.min(YY[:,0]), np.max(YY[:,0]))
@@ -385,17 +395,17 @@ def gaussianPuffModel3D(lon, lat, q, h, wind_s, wind_d, z1, save_path, t, delt_t
 
 if __name__ == '__main__':
 
-    lon = '94.990519'
-    lat = '36.349942'
+    lon = '87'
+    lat = '43'
     q = '7500'
-    h = '210'
+    h = '30'
     wind_s = 25
     wind_d = 270
     z1 = 0
     humidify = 0
     acid = 'SODIUM_CHLORIDE'
     rh = 0.9
-    save_path = r'C:/Users/MJY/Desktop/result'
+    save_path = r'C:/Users/mjynj/Desktop/result'
     t = 300
-    delt_t = '20,20'
+    delt_t = '20'
     result_dict = gaussianPuffModel3D(lon, lat, q, h, wind_s, wind_d, z1, save_path, t, delt_t, acid= 'SODIUM_CHLORIDE', humidify= None, rh= 0.9)
