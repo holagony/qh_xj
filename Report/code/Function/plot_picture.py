@@ -80,23 +80,40 @@ def plot_picture(df, namex, namey, namelable, unit, namepng, num1, num2, data_di
     # texts.append(plt.text(max_year, max_temp, f'最高，{max_year}年，{max_temp}{unit}', color='red', ha='center', va='bottom'))
     # texts.append(plt.text(min_year, min_temp - num2 / 4, f'最低，{min_year}年，{min_temp}{unit}', color='red', ha='center', va='top'))
 
-    # 选择一个相对空旷的区域放置文本
-    text_x = year_min + (year_max - year_min) * 0.2 
-    text_y = y_min + (y_max - y_min) * 0.8  
-    
+    # 准备方程文本
     if intercept >= 0:
-        equation_text = f'y={slope:.2f}x+{intercept:.2f}\n趋势率={slope*10:.2f}{unit}/10a'
+        equation_text = f'y={slope:.2f}x+{intercept:.2f}\n\n趋势率={slope*10:.2f}{unit}/10a'
     else:
-        equation_text = f'y={slope:.2f}x{intercept:.2f}\n趋势率={slope*10:.2f}{unit}/10a'
+        equation_text = f'y={slope:.2f}x{intercept:.2f}\n\n趋势率={slope*10:.2f}{unit}/10a'
     
-    text_obj = plt.text(text_x, text_y, equation_text, fontsize=9)
-
-    # 生成避障点 - 更全面的覆盖
-    # 1. 数据点
+    # 智能选择最佳初始位置，而不是固定位置
+    x_range = year_max - year_min
+    y_range = y_max - y_min
+    
+    # 定义候选位置
+    candidate_positions = [
+        # 四角位置
+        (year_min + x_range * 0.1, y_min + y_range * 0.9),   # 左上
+        (year_min + x_range * 0.9, y_min + y_range * 0.9),   # 右上
+        (year_min + x_range * 0.1, y_min + y_range * 0.1),   # 左下
+        (year_min + x_range * 0.9, y_min + y_range * 0.1),   # 右下
+        # 边缘中点
+        (year_min + x_range * 0.5, y_min + y_range * 0.95),  # 上中
+        (year_min + x_range * 0.5, y_min + y_range * 0.05),  # 下中
+        (year_min + x_range * 0.05, y_min + y_range * 0.5),  # 左中
+        (year_min + x_range * 0.95, y_min + y_range * 0.5),  # 右中
+        # 中心偏移位置
+        (year_min + x_range * 0.3, y_min + y_range * 0.7),   # 左上偏中
+        (year_min + x_range * 0.7, y_min + y_range * 0.7),   # 右上偏中
+        (year_min + x_range * 0.3, y_min + y_range * 0.3),   # 左下偏中
+        (year_min + x_range * 0.7, y_min + y_range * 0.3),   # 右下偏中
+    ]
+    
+    # 生成避障点
     points_x = valid_years.values
     points_y = valid_gstperatures.values
     
-    # 2. 生成所有连线上的密集点
+    # 生成所有连线上的密集点
     line_points_x = []
     line_points_y = []
     
@@ -124,17 +141,53 @@ def plot_picture(df, namex, namey, namelable, unit, namepng, num1, num2, data_di
     # 合并所有避障点
     all_obstacle_x = np.concatenate([points_x, line_points_x])
     all_obstacle_y = np.concatenate([points_y, line_points_y])
+    
+    # 智能选择最佳位置：计算每个候选位置与障碍物的最小距离
+    def calculate_position_score(pos_x, pos_y, obs_x, obs_y):
+        """计算位置的适合度分数，距离障碍物越远分数越高"""
+        distances = np.sqrt((obs_x - pos_x)**2 + (obs_y - pos_y)**2)
+        min_distance = np.min(distances)
+        avg_distance = np.mean(distances)
+        # 综合考虑最小距离和平均距离
+        return min_distance * 0.7 + avg_distance * 0.3
+    
+    # 为每个候选位置计算分数
+    position_scores = []
+    for pos_x, pos_y in candidate_positions:
+        score = calculate_position_score(pos_x, pos_y, all_obstacle_x, all_obstacle_y)
+        position_scores.append(score)
+    
+    # 选择分数最高的位置作为初始位置
+    best_position_idx = np.argmax(position_scores)
+    best_x, best_y = candidate_positions[best_position_idx]
+    
+    print(f"选择的最佳初始位置: 候选位置{best_position_idx+1} ({best_x:.1f}, {best_y:.1f}), 分数: {position_scores[best_position_idx]:.2f}")
+    
+    # 创建单个文本对象在最佳位置
+    text_obj = plt.text(best_x, best_y, equation_text, fontsize=12)
 
-    # 使用adjust_text进行避障
+    # 使用adjust_text进行强力避障优化
     adjust_text(
-        [text_obj],
+        [text_obj],  # 传入单个文本对象
         x=all_obstacle_x,
         y=all_obstacle_y,
-        expand_text=(1.5, 1.5),
-        expand_points=(2.0, 2.0),
-        force_text=(0.5, 0.5),
-        force_points=(0.5, 0.5),
-        only_move={'points': 'xy', 'text': 'xy'}
+        # 扩大文本和点的影响范围
+        expand_text=(2.5, 2.5),      # 增大文本周围的保护区域
+        expand_points=(3.0, 3.0),    # 增大避障点的影响范围
+        # 增强各种力的强度
+        force_text=(1.0, 1.0),       # 增强文本间的排斥力
+        force_points=(1.0, 1.0),     # 增强文本与数据点的排斥力
+        force_objects=(0.5, 0.5),    # 增加与其他对象的排斥力
+        # 允许在整个图表范围内移动
+        only_move={'points': 'xy', 'text': 'xy'},
+        # 增加迭代次数，让算法有更多机会找到最佳位置
+        lim=200,                     # 增加最大迭代次数
+        precision=0.01,              # 提高精度要求
+        # 允许文本移动到图表边界外一定距离
+        autoalign='xy',              # 自动对齐
+        ha='center', va='center',    # 文本对齐方式
+        # 设置移动的最大距离限制（相对于图表大小）
+        arrowprops=None              # 不显示箭头
     )
 
     
