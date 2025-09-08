@@ -303,9 +303,9 @@ def monthly_data_processing(monthly_data, years):
         
         # 填充
         fillna_values = {'Station_Id_C': df_sta.loc[df_sta['Station_Id_C'].notnull(), 'Station_Id_C'][0],
-                         'Station_Name': df_sta.loc[df_sta['Station_Name'].notnull(), 'Station_Name'][0]}
-                        #  'Lon': df_sta.loc[df_sta['Lon'].notnull(), 'Lon'][0],
-                        #  'Lat': df_sta.loc[df_sta['Lat'].notnull(), 'Lat'][0]}
+                         'Station_Name': df_sta.loc[df_sta['Station_Name'].notnull(), 'Station_Name'][0],
+                         'Lon': df_sta.loc[df_sta['Lon'].notnull(), 'Lon'][0],
+                         'Lat': df_sta.loc[df_sta['Lat'].notnull(), 'Lat'][0]}
         df_sta = df_sta.fillna(fillna_values)
         df_sta['Year'] = df_sta.index.year
         df_sta['Mon'] = df_sta.index.month
@@ -435,9 +435,9 @@ def daily_data_processing(daily_data, years):
         
         # 填充
         fillna_values = {'Station_Id_C': df_sta.loc[df_sta['Station_Id_C'].notnull(), 'Station_Id_C'][0],
-                         'Station_Name': df_sta.loc[df_sta['Station_Name'].notnull(), 'Station_Name'][0]}
-                        #  'Lon': df_sta.loc[df_sta['Lon'].notnull(), 'Lon'][0],
-                        #  'Lat': df_sta.loc[df_sta['Lat'].notnull(), 'Lat'][0]}
+                         'Station_Name': df_sta.loc[df_sta['Station_Name'].notnull(), 'Station_Name'][0],
+                         'Lon': df_sta.loc[df_sta['Lon'].notnull(), 'Lon'][0],
+                         'Lat': df_sta.loc[df_sta['Lat'].notnull(), 'Lat'][0]}
         df_sta = df_sta.fillna(fillna_values)
         df_sta['Year'] = df_sta.index.year
         df_sta['Mon'] = df_sta.index.month

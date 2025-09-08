@@ -63,8 +63,8 @@ elif flag == 'LOCAL': # 自己电脑
     __C.INFO.TILE_PATH = os.path.join(data_file_dir, 'mapbox_tile\\')
 
 elif flag == 'XJ': # 新疆
-    __C.INFO.IN_UPLOAD_FILE = '/zipdata'
-    __C.INFO.OUT_UPLOAD_FILE = 'E:/hxkj/xinjiang/zipdata'
+    __C.INFO.IN_UPLOAD_FILE = '/zipdata/'
+    __C.INFO.OUT_UPLOAD_FILE = 'E://hxkj//xinjiang//zipdata//'
     __C.INFO.IN_DATA_DIR = '/data' # 容器内保存文件夹
     __C.INFO.OUT_DATA_DIR = 'E:/hxkj/xinjiang/data' # 容器外挂载保存文件夹
     __C.INFO.OUT_DATA_URL = 'http://10.185.104.228/img'
