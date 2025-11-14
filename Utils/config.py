@@ -79,7 +79,7 @@ elif flag == 'XJ': # 新疆
     __C.INFO.SCHEMA_NAME = 'public'
     __C.INFO.READ_LOCAL = False
     __C.INFO.SAVE_RESULT = True
-    __C.INFO.TILE_PATH = os.path.join(data_file_dir, 'mapbox_tile\\') # 容器内地址
+    __C.INFO.TILE_PATH = os.path.join(data_file_dir, 'mapbox_tile/') # 容器内地址
 
 # 静态文件路径
 __C.FILES = edict()
