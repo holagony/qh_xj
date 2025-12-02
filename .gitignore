@@ -94,6 +94,7 @@ ENV/
 .DS_Store
 .flaskenv
 .spyproject
+Files/test_data
 Files/test_data/qh_day.csv
 Files/test_data/qh_hour.csv
 Files/test_data/qh_mon.csv
