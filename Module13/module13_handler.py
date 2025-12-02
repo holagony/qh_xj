@@ -43,10 +43,10 @@ def rain_step1(data_json):
     print('初始输入路径是：' + input_path)
     print('-----------')
 
-    input_path = input_path.replace(cfg.INFO.OUT_UPLOAD_FILE, cfg.INFO.IN_UPLOAD_FILE)  # inupt_path要转换为容器内的路径
-
     if '\\' in input_path:
         input_path = input_path.replace('\\', '/') # windows to linux
+
+    input_path = input_path.replace(cfg.INFO.OUT_UPLOAD_FILE, cfg.INFO.IN_UPLOAD_FILE)  # inupt_path要转换为容器内的路径
 
     print('容器内路径是: ' + input_path)
 
