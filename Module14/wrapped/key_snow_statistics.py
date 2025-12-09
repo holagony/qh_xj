@@ -8,8 +8,8 @@ from Utils.config import cfg
 from Utils.get_local_data import get_local_data
 
 
-def compute_frs_month_from_day(pre_day):
-    df = pre_day.dropna(subset=['FRS_Depth']).copy()
+def compute_pre_month_from_day(pre_day):
+    df = pre_day.dropna(subset=['Snow_Depth']).copy()
     if 'Datetime' not in df.columns:
         month_col = 'Mon' if 'Mon' in df.columns else ('Month' if 'Month' in df.columns else None)
         year_col = 'Year' if 'Year' in df.columns else None
@@ -38,8 +38,8 @@ def compute_frs_month_from_day(pre_day):
     records = []
     if 'Station_Name' in df.columns:
         for station, dfg in df.groupby(['Station_Name', 'Year', 'Mon']):
-            max_val = dfg['FRS_Depth'].astype(float).max()
-            max_rows = dfg[dfg['FRS_Depth'].astype(float) == max_val]
+            max_val = dfg['Snow_Depth'].astype(float).max()
+            max_rows = dfg[dfg['Snow_Depth'].astype(float) == max_val]
             year_v = int(dfg['Year'].iloc[0])
             mon_v = int(dfg['Mon'].iloc[0])
             if len(max_rows) == 1:
@@ -52,8 +52,8 @@ def compute_frs_month_from_day(pre_day):
 
             rec = {
                 'Station_Name': dfg['Station_Name'].iloc[0],
-                'FRS_Depth_Max_Day': float(max_val),
-                'FRS_Depth_Max_ODay_C': oday,
+                'Snow_Depth_Max_Day': float(max_val),
+                'Snow_Depth_Max_ODay_C': oday,
                 'Year': year_v,
                 'Mon': mon_v,
                 'Datetime': dt
@@ -63,8 +63,8 @@ def compute_frs_month_from_day(pre_day):
             records.append(rec)
     else:
         for (year_v, mon_v), dfg in df.groupby(['Year', 'Mon']):
-            max_val = dfg['FRS_Depth'].astype(float).max()
-            max_rows = dfg[dfg['FRS_Depth'].astype(float) == max_val]
+            max_val = dfg['Snow_Depth'].astype(float).max()
+            max_rows = dfg[dfg['Snow_Depth'].astype(float) == max_val]
             if len(max_rows) == 1:
                 day_v = int(max_rows['Day'].iloc[0])
                 dt = pd.Timestamp(int(year_v), int(mon_v), day_v)
@@ -74,8 +74,8 @@ def compute_frs_month_from_day(pre_day):
                 oday = str(len(max_rows)) + 'T'
 
             rec = {
-                'FRS_Depth_Max_Day': float(max_val),
-                'FRS_Depth_Max_ODay_C': oday,
+                'Snow_Depth_Max_Day': float(max_val),
+                'Snow_Depth_Max_ODay_C': oday,
                 'Year': int(year_v),
                 'Mon': int(mon_v),
                 'Datetime': dt
@@ -92,30 +92,30 @@ def key_pre_statistics(pre_day):
         if 'Station_Name' in pre_day.columns:
             yearly_records = []
             for station, df in pre_day.groupby('Station_Name'):
-                max_dates = df.dropna(subset=['FRS_Depth']).groupby(lambda x: x.year)['FRS_Depth'].idxmax()
-                max_info = df.loc[max_dates[max_dates.notna()], ['FRS_Depth']]
-                max_info['最大日冻土深度出现日期'] = max_info.index.strftime('%m月%d日')
+                max_dates = df.dropna(subset=['Snow_Depth']).groupby(lambda x: x.year)['Snow_Depth'].idxmax()
+                max_info = df.loc[max_dates[max_dates.notna()], ['Snow_Depth']]
+                max_info['最大日积雪深度出现日期'] = max_info.index.strftime('%m月%d日')
                 max_info.index = max_info.index.year
 
                 yearly_df = pd.concat([max_info], axis=1)
                 yearly_df.insert(loc=0, column='年份', value=yearly_df.index)
                 yearly_df.reset_index(drop=True, inplace=True)
                 yearly_df.insert(loc=0, column='站名', value=station)
-                yearly_df.columns = ['站名', '年份', '最大日冻土深度(cm)', '最大日冻土深度出现日期']
+                yearly_df.columns = ['站名', '年份', '最大日积雪深度(cm)', '最大日积雪深度出现日期']
                 yearly_records.extend(yearly_df.to_dict(orient='records'))
 
             basic_pre_yearly = yearly_records if len(yearly_records) != 0 else None
 
         else:
-            max_dates = pre_day.dropna(subset=['FRS_Depth']).groupby(lambda x: x.year)['FRS_Depth'].idxmax()
-            max_info = pre_day.loc[max_dates[max_dates.notna()], ['FRS_Depth']]
-            max_info['最大日冻土深度出现日期'] = max_info.index.strftime('%m月%d日')
+            max_dates = pre_day.dropna(subset=['Snow_Depth']).groupby(lambda x: x.year)['Snow_Depth'].idxmax()
+            max_info = pre_day.loc[max_dates[max_dates.notna()], ['Snow_Depth']]
+            max_info['最大日积雪深度出现日期'] = max_info.index.strftime('%m月%d日')
             max_info.index = max_info.index.year
 
             basic_pre_yearly = pd.concat([max_info], axis=1)
             basic_pre_yearly.insert(loc=0, column='年份', value=basic_pre_yearly.index)
             basic_pre_yearly.reset_index(drop=True, inplace=True)
-            basic_pre_yearly.columns = ['年份', '最大日冻土深度(cm)', '最大日冻土深度出现日期']
+            basic_pre_yearly.columns = ['年份', '最大日积雪深度(cm)', '最大日积雪深度出现日期']
             basic_pre_yearly = basic_pre_yearly.to_dict(orient='records')
 
     except Exception as e:
@@ -125,7 +125,7 @@ def key_pre_statistics(pre_day):
     finally:
         try:
             
-            pre_month = compute_frs_month_from_day(pre_day)
+            pre_month = compute_pre_month_from_day(pre_day)
             if 'Station_Name' in pre_month.columns:
                 accum_records = []
 
@@ -140,44 +140,44 @@ def key_pre_statistics(pre_day):
                     return x
 
                 for station, dfm in pre_month.groupby('Station_Name'):
-                    max_pre = dfm[['FRS_Depth_Max_Day', 'FRS_Depth_Max_ODay_C', 'Year', 'Mon']]
+                    max_pre = dfm[['Snow_Depth_Max_Day', 'Snow_Depth_Max_ODay_C', 'Year', 'Mon']]
 
                     max_pre_accum = []
 
                     for i in range(1, 13):
                         month_i_max = max_pre[max_pre.index.month == i]
-                        month_i_max = month_i_max[month_i_max['FRS_Depth_Max_Day'] == month_i_max['FRS_Depth_Max_Day'].max()]
+                        month_i_max = month_i_max[month_i_max['Snow_Depth_Max_Day'] == month_i_max['Snow_Depth_Max_Day'].max()]
 
                         if len(month_i_max) > 1:
                             pre_data = month_i_max.iloc[0, 0]
-                            occur_day = str(month_i_max['FRS_Depth_Max_ODay_C'].apply(sample).sum()) + 'T'
+                            occur_day = str(month_i_max['Snow_Depth_Max_ODay_C'].apply(sample).sum()) + 'T'
                             occur_year = str(len(month_i_max)) + 'N'
                             occur_month = month_i_max.iloc[0, 3]
                             array = np.array([pre_data, occur_day, occur_year, occur_month]).reshape(1, -1)
-                            max_df = pd.DataFrame(array, columns=['FRS_Depth_Max_Day', 'FRS_Depth_Max_ODay_C', 'Year', 'Mon'], index=[month_i_max.index[0]])
+                            max_df = pd.DataFrame(array, columns=['Snow_Depth_Max_Day', 'Snow_Depth_Max_ODay_C', 'Year', 'Mon'], index=[month_i_max.index[0]])
                         else:
-                            max_df = month_i_max[['FRS_Depth_Max_Day', 'FRS_Depth_Max_ODay_C', 'Year', 'Mon']]
+                            max_df = month_i_max[['Snow_Depth_Max_Day', 'Snow_Depth_Max_ODay_C', 'Year', 'Mon']]
 
                         max_pre_accum.append(max_df)
 
                     max_pre_accum = pd.concat(max_pre_accum, axis=0, ignore_index=True)
-                    max_pre_accum['FRS_Depth_Max_Day'] = max_pre_accum['FRS_Depth_Max_Day'].astype(float)
-                    max_row = max_pre_accum[max_pre_accum['FRS_Depth_Max_Day'] == max_pre_accum['FRS_Depth_Max_Day'].max()].reset_index(drop=True)
+                    max_pre_accum['Snow_Depth_Max_Day'] = max_pre_accum['Snow_Depth_Max_Day'].astype(float)
+                    max_row = max_pre_accum[max_pre_accum['Snow_Depth_Max_Day'] == max_pre_accum['Snow_Depth_Max_Day'].max()].reset_index(drop=True)
 
                     if len(max_row) == 1:
-                        pre_v = max_row.loc[0, 'FRS_Depth_Max_Day']
-                        date_v = max_row['Mon'].map(str) + '-' + max_row['FRS_Depth_Max_ODay_C'].map(str)
+                        pre_v = max_row.loc[0, 'Snow_Depth_Max_Day']
+                        date_v = max_row['Mon'].map(str) + '-' + max_row['Snow_Depth_Max_ODay_C'].map(str)
                         year_v = max_row.loc[0, 'Year']
                         values_list_max = [pre_v, date_v.values[0], year_v]
                     else:
-                        pre_v = max_row.loc[0, 'FRS_Depth_Max_Day']
+                        pre_v = max_row.loc[0, 'Snow_Depth_Max_Day']
                         date_v = str(len(max_row)) + 'T'
                         year_v = str(max_row['Year'].apply(sample).sum()) + 'N'
                         values_list_max = [pre_v, date_v, year_v]
 
                     max_pre_accum.drop('Mon', axis=1, inplace=True)
                     max_pre_accum = max_pre_accum.T
-                    max_pre_accum.index = ['最大日冻土深度(cm)', '最大日冻土深度出现日期', '最大日冻土深度出现年份']
+                    max_pre_accum.index = ['最大日积雪深度(cm)', '最大日积雪深度出现日期', '最大日积雪深度出现年份']
                     max_pre_accum['全年'] = values_list_max
 
                     basic_pre_accum_station = max_pre_accum
@@ -193,7 +193,7 @@ def key_pre_statistics(pre_day):
                 basic_pre_accum = accum_records if len(accum_records) != 0 else None
 
             else:
-                max_pre = pre_month[['FRS_Depth_Max_Day', 'FRS_Depth_Max_ODay_C', 'Year', 'Mon']]
+                max_pre = pre_month[['Snow_Depth_Max_Day', 'Snow_Depth_Max_ODay_C', 'Year', 'Mon']]
 
                 max_pre_accum = []
 
@@ -209,37 +209,37 @@ def key_pre_statistics(pre_day):
 
                 for i in range(1, 13):
                     month_i_max = max_pre[max_pre.index.month == i]
-                    month_i_max = month_i_max[month_i_max['FRS_Depth_Max_Day'] == month_i_max['FRS_Depth_Max_Day'].max()]
+                    month_i_max = month_i_max[month_i_max['Snow_Depth_Max_Day'] == month_i_max['Snow_Depth_Max_Day'].max()]
 
                     if len(month_i_max) > 1:
                         pre_data = month_i_max.iloc[0, 0]
                         occur_year = str(len(month_i_max)) + 'N'
                         occur_month = month_i_max.iloc[0, 3]
                         array = np.array([pre_data, occur_year, occur_month]).reshape(1, -1)
-                        max_df = pd.DataFrame(array, columns=['FRS_Depth_Max_Day', 'Year', 'Mon'], index=[month_i_max.index[0]])
+                        max_df = pd.DataFrame(array, columns=['Snow_Depth_Max_Day', 'Year', 'Mon'], index=[month_i_max.index[0]])
                     else:
-                        max_df = month_i_max[['FRS_Depth_Max_Day', 'Year', 'Mon']]
+                        max_df = month_i_max[['Snow_Depth_Max_Day', 'Year', 'Mon']]
 
                     max_pre_accum.append(max_df)
 
                 max_pre_accum = pd.concat(max_pre_accum, axis=0, ignore_index=True)
-                max_pre_accum['FRS_Depth_Max_Day'] = max_pre_accum['FRS_Depth_Max_Day'].astype(float)
-                max_row = max_pre_accum[max_pre_accum['FRS_Depth_Max_Day'] == max_pre_accum['FRS_Depth_Max_Day'].max()].reset_index(drop=True)
+                max_pre_accum['Snow_Depth_Max_Day'] = max_pre_accum['Snow_Depth_Max_Day'].astype(float)
+                max_row = max_pre_accum[max_pre_accum['Snow_Depth_Max_Day'] == max_pre_accum['Snow_Depth_Max_Day'].max()].reset_index(drop=True)
 
                 if len(max_row) == 1:
-                    pre_v = max_row.loc[0, 'FRS_Depth_Max_Day']
-                    date_v = max_row['Mon'].map(str) + '-' + max_row['FRS_Depth_Max_ODay_C'].map(str)
+                    pre_v = max_row.loc[0, 'Snow_Depth_Max_Day']
+                    date_v = max_row['Mon'].map(str) + '-' + max_row['Snow_Depth_Max_ODay_C'].map(str)
                     year_v = max_row.loc[0, 'Year']
                     values_list_max = [pre_v, date_v.values[0], year_v]
                 else:
-                    pre_v = max_row.loc[0, 'FRS_Depth_Max_Day']
+                    pre_v = max_row.loc[0, 'Snow_Depth_Max_Day']
                     date_v = str(len(max_row)) + 'T'
                     year_v = str(max_row['Year'].apply(sample).sum()) + 'N'
                     values_list_max = [pre_v, date_v, year_v]
 
                 max_pre_accum.drop('Mon', axis=1, inplace=True)
                 max_pre_accum = max_pre_accum.T
-                max_pre_accum.index = ['最大日冻土深度(cm)', '最大日冻土深度出现日期', '最大日冻土深度出现年份']
+                max_pre_accum.index = ['最大日积雪深度(cm)', '最大日积雪深度出现日期', '最大日积雪深度出现年份']
                 max_pre_accum['全年'] = values_list_max
 
                 basic_pre_accum = max_pre_accum
@@ -270,7 +270,7 @@ if __name__ == '__main__':
     sta_ids = '52866,52713'
     years = '2000,2020'
 
-    day_eles = ('Station_Name,Station_Id_C,Lat,Lon,Datetime,Year,Mon,Day,' + 'FRS_Depth').split(',')
+    day_eles = ('Station_Name,Station_Id_C,Lat,Lon,Datetime,Year,Mon,Day,' + 'Snow_Depth').split(',')
     post_daily_df = get_local_data(daily_df, sta_ids, day_eles, years, 'Day')
 
     pre_day = post_daily_df.copy()

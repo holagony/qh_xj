@@ -1,7 +1,14 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Thu Feb 22 15:28:40 2024
+
+@author: EDY
+"""
+
 import json
 import simplejson
 import requests
-from Module02.module02_handler import feature_stats_handler
+from Module14.return_element_handler import workerReturnWind
 
 
 def callback(url, result_id, result):
@@ -12,13 +19,14 @@ def callback(url, result_id, result):
     requests.put(url, headers=header, data=json.dumps(_json))
 
 
-class workerBasic:
+class workerReturn:
 
     def act(self, json_str):
         data_json = json.loads(json_str)
+        result_dict = workerReturnWind(data_json)
+        return_data = simplejson.dumps({'code': 200, 'msg': 'success', 'data': result_dict}, ensure_ascii=False, ignore_nan=True)
         result_id = data_json.get('id')
         callback_url = data_json.get('callback')
-        result_dict = feature_stats_handler(data_json)
-        return_data = simplejson.dumps({'code': 200, 'msg': 'success', 'data': result_dict}, ensure_ascii=False, ignore_nan=True)
         callback(callback_url, result_id, return_data)
+
         return return_data
