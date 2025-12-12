@@ -8,8 +8,9 @@ from Utils.config import cfg
 from Utils.get_local_data import get_local_data
 # from Report.code.Module02.wind import wind_report
 
-
-def key_wind_statistics(wind_day, wind_month):
+# wind_day    = daily_df
+# wind_month  =monthly_df
+def key_wind_statistics(wind_day, wind_month, data_dir):
     '''
     温度要素，历年和累年各月统计，
     使用天擎上的年数据和月数据，要素名称为天擎上默认的名称

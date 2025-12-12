@@ -9,7 +9,7 @@ from Utils.get_local_data import get_local_data
 # from Report.code.Module02.tem import tem_report
 
 
-def key_tem_statistics(tem_day, tem_month):
+def key_tem_statistics(tem_day, tem_month, data_dir):
     '''
     温度要素，历年和累年各月统计，
     使用天擎上的年数据和月数据，要素名称为天擎上默认的名称

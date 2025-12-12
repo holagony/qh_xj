@@ -87,7 +87,7 @@ def compute_frs_month_from_day(df):
     return out
 
 
-def key_frs_statistics(frs_day):
+def key_frs_statistics(frs_day, data_dir):
     try:
         if ('FRS_1st_Bot' in frs_day.columns) or ('FRS_2nd_Bot' in frs_day.columns):
             frs_day['frs'] = frs_day[[c for c in ['FRS_1st_Bot', 'FRS_2nd_Bot'] if c in frs_day.columns]].max(axis=1).fillna(0)

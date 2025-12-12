@@ -56,12 +56,7 @@ def feature_stats_handler(data_json):
     daily_df = None
 
     for ele in elements:
-        if ele == 'PRS':
-            # yearly_elements += 'PRS_Avg,PRS_Max,PRS_Max_Odate,PRS_Min,PRS_Min_Odate,'
-            monthly_elements += 'PRS_Avg,PRS_Max,PRS_Min,PRS_Max_ODay_C,PRS_Min_ODay_C,'
-            daily_elements += 'PRS_Avg,PRS_Max,PRS_Min,'
-
-        elif ele == 'TEM':
+        if ele == 'TEM':
             # yearly_elements += 'TEM_Avg,TEM_Max_Avg,TEM_Min_Avg,TEM_Max,V12011_067,TEM_Min,V12012_067,'
             monthly_elements += 'TEM_Avg,TEM_Max,TEM_Min,TEM_Max_Avg,TEM_Min_Avg,TEM_Max_ODay_C,TEM_Min_ODay_C,'
             daily_elements += 'TEM_Avg,TEM_Max,TEM_Min,'
@@ -69,8 +64,8 @@ def feature_stats_handler(data_json):
         elif ele == 'WIND':
             # yearly_elements += 'WIN_S_2mi_Avg,WIN_S_Max,WIN_D_S_Max_C,V11042_067,WIN_S_Inst_Max,WIN_D_INST_Max_C,WIN_S_INST_Max_ODate_C,WIN_D_Max_C,WIN_D_Max_Freq,'
             # 检查青海和新疆，如：WIN_S_AVG_W 和 WIN_S_Avg__W
-            monthly_elements += 'WIN_S_2mi_Avg,WIN_S_Max,WIN_D_S_Max_C,WIN_S_Max_ODay_C,WIN_S_Inst_Max,WIN_D_INST_Max_C,WIN_S_INST_Max_ODay_C,WIN_D_Max_C,WIN_D_Max_Freq,WIN_NNE_Freq,WIN_NE_Freq,WIN_ENE_Freq,WIN_E_Freq,WIN_ESE_Freq,WIN_SE_Freq,WIN_SSE_Freq,WIN_S_Freq,WIN_SSW_Freq,WIN_SW_Freq,WIN_WSW_Freq,WIN_W_Freq,WIN_WNW_Freq,WIN_NW_Freq,WIN_NNW_Freq,WIN_N_Freq,WIN_C_Freq,WIN_S_Avg_NNE,WIN_S_Avg_NE,WIN_S_Avg_ENE,WIN_S_Avg_E,WIN_S_Avg_ESE,WIN_S_Avg_SE,WIN_S_Avg_SSE,WIN_S_Avg_S,WIN_S_Avg_SSW,WIN_S_Avg_SW,WIN_S_Avg_WSW,WIN_S_AVG_W,WIN_S_Avg_WNW,WIN_S_Avg_NW,WIN_S_Avg_NNW,WIN_S_Avg__N,'
-            daily_elements += 'WIN_S_2mi_Avg,WIN_S_Max,WIN_D_S_Max,WIN_S_Inst_Max,WIN_D_INST_Max,'
+            monthly_elements += 'WIN_S_2mi_Avg,WIN_S_Max,WIN_S_Max_ODay_C,WIN_S_Inst_Max,WIN_S_INST_Max_ODay_C,'
+            daily_elements += 'WIN_S_2mi_Avg,WIN_S_Max,WIN_S_Inst_Max,'
 
         elif ele == 'PRE':
             # yearly_elements += 'PRE_Time_2020,PRE_Max_Day,V13052_067,PRE_A0p1mm_Days,PRE_A10mm_Days,PRE_A25mm_Days,PRE_A50mm_Days,PRE_A100mm_Days,PRE_A150mm_Days,Days_Max_Coti_PRE,PRE_Conti_Max,PRE_LCDays_EMon,EDay_Max_Coti_PRE,NPRE_LCDays,NPRE_LCDays_EMon,NPRE_LCDays_EDay,PRE_Max_Conti,Days_Max_Conti_PRE,PRE_Coti_Max_EMon,PRE_Coti_Max_EDay,'
@@ -94,21 +89,23 @@ def feature_stats_handler(data_json):
         day_eles = ('Station_Name,Station_Id_C,Lat,Lon,Datetime,Year,Mon,Day,' + daily_elements[:-1]).split(',')
 
         daily_df = pd.read_csv(cfg.FILES.QH_DATA_DAY)
-        
-        if 'WIND' in elements:
-            daily_df['WIN_D_INST_Max'] = np.random.randint(0,361,size=len(daily_df))
+        monthly_df = pd.read_csv(cfg.FILES.QH_DATA_MONTH, low_memory=False)
 
-        elif 'SNOW' in elements:
+
+        if 'SNOW' in elements:
             daily_df['Snow_Depth'] = 20
             
         daily_df = get_local_data(daily_df, sta_ids, day_eles, years, 'Day')
-
+        monthly_df = get_local_data(monthly_df, sta_ids, month_eles, years, 'Month')
     else:
         day_ele_list = ['VAPOR','SSH']
         other_ele_list = ['PRS', 'TEM', 'WIND', 'PRE', 'RH', 'GST', 'SNOW']
 
         # 天擎数据下载 and 数据前处理
         try:
+
+            monthly_df = get_cmadaas_monthly_data(years, monthly_elements, sta_ids)
+            monthly_df = monthly_data_processing(monthly_df, years)
 
             daily_df = get_cmadaas_daily_data(years, daily_elements, sta_ids)
             daily_df = daily_data_processing(daily_df, years)
@@ -169,29 +166,21 @@ def feature_stats_handler(data_json):
         elif ele == 'WIND':
             result_dict.wind_speed = edict()
             # 风速
-            basic_win_yearly, basic_win_accum = key_win_statistics(daily_df, monthly_df)
+            basic_win_yearly, basic_win_accum, report_path = key_wind_statistics(daily_df, monthly_df, data_dir)
             result_dict.wind_speed['历年'] = basic_win_yearly
             result_dict.wind_speed['累年各月'] = basic_win_accum
             result_list.append(OrderedDict(zip(['历年风速统计', '累年各月风速统计'], [basic_win_yearly, basic_win_accum])))
 
-            # 风向频率
-            basic_win_d_accum, basic_win_s_accum = key_win_freq_statistics(monthly_df)
-            result_dict.wind_freq_table = basic_win_d_accum
-            result_dict.wind_freq_speed_table = basic_win_s_accum
-
             # report
             try:
-                report_path = win_report(basic_win_yearly, basic_win_accum, monthly_df, basic_win_d_accum, basic_win_s_accum, data_dir)
                 report_path = report_path.replace(cfg.INFO.IN_DATA_DIR, cfg.INFO.OUT_DATA_DIR)
                 result_dict['report'] = report_path.replace(cfg.INFO.OUT_DATA_DIR, cfg.INFO.OUT_DATA_URL)
             except:
                 result_dict['report'] = None
 
-            result_list.append(OrderedDict(zip(['累年各月风向频率统计', '累年各月风向对应风速统计'], [basic_win_d_accum, basic_win_s_accum])))
-
         elif ele == 'PRE':
             result_dict.precipitation = edict()
-            basic_pre_yearly, basic_pre_accum, report_path = key_pre_statistics(daily_df, monthly_df, data_dir)
+            basic_pre_yearly, basic_pre_accum, report_path = key_pre_statistics(daily_df, data_dir)
             result_dict.precipitation['历年'] = basic_pre_yearly
             result_dict.precipitation['累年各月'] = basic_pre_accum
 
@@ -205,7 +194,7 @@ def feature_stats_handler(data_json):
 
         elif ele == 'SNOW':
             result_dict.snow_depth = edict()
-            basic_snow_yearly, basic_snow_accum, report_path = key_snow_statistics(daily_df, monthly_df, data_dir)
+            basic_snow_yearly, basic_snow_accum, report_path = key_snow_statistics(daily_df, data_dir)
             result_dict.snow_depth['历年'] = basic_snow_yearly
             result_dict.snow_depth['累年各月'] = basic_snow_accum
 
@@ -219,7 +208,7 @@ def feature_stats_handler(data_json):
 
         elif ele == 'FRS':
             result_dict.frs_depth = edict()
-            basic_frs_yearly, basic_frs_accum, report_path = key_frs_statistics(daily_df, monthly_df, data_dir)
+            basic_frs_yearly, basic_frs_accum, report_path = key_frs_statistics(daily_df, data_dir)
             result_dict.frs_depth['历年'] = basic_frs_yearly
             result_dict.frs_depth['累年各月'] = basic_frs_accum
 
@@ -242,7 +231,7 @@ if __name__=='__main__':
     data_json={
   "years": "1985,2009",
   "station_ids": "52754",
-  "elements": "FRS",
+  "elements": ["TEM","WIND","PRE","FRS","SNOW"],
   "id": "uuid",
   "is_async": 0,
   "staValueName": [

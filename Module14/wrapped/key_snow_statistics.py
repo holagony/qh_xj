@@ -87,7 +87,7 @@ def compute_pre_month_from_day(pre_day):
     return out
 
 
-def key_pre_statistics(pre_day):
+def key_snow_statistics(pre_day, data_dir):
     try:
         if 'Station_Name' in pre_day.columns:
             yearly_records = []
