@@ -15,6 +15,7 @@ from Module10.module10_flask import module10
 from Module11.module11_flask import module11
 from Module12.module12_flask import module12
 from Module13.module13_flask import module13
+from Module14.module14_flask import module14
 
 app = Flask(__name__)
 app.config["JSON_AS_ASCII"] = False
@@ -32,6 +33,8 @@ app.register_blueprint(module10, url_prefix='/module10')
 app.register_blueprint(module11, url_prefix='/module11')
 app.register_blueprint(module12, url_prefix='/module12')
 app.register_blueprint(module13, url_prefix='/module13')
+app.register_blueprint(module14, url_prefix='/module14')
+
 
 
 # 跨域支持

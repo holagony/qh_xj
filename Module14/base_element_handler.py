@@ -18,6 +18,8 @@ from Utils.get_local_data import get_local_data
 from Utils.data_loader_with_threads import get_cmadaas_yearly_data, get_cmadaas_monthly_data, get_cmadaas_daily_data
 from Report.code.Module02.wind import win_report
 from Utils.get_url_path import save_cmadaas_data
+from docx import Document
+from docxcompose.composer import Composer
 
 def feature_stats_handler(data_json):
     '''
@@ -26,13 +28,22 @@ def feature_stats_handler(data_json):
     result_dict = edict()
 
     # 1.读取参数
-    years = data_json['years']  # 选择的数据年份
-    sta_ids = data_json['station_ids']  # 选择的站号
-    elements = data_json['elements']  # 选择的气象要素
+    years = data_json.get('years')
+    sta_ids = data_json.get('station_ids')
+    if sta_ids is None:
+        sta_ids = data_json.get('station_id')
+    sub_sta_ids = data_json.get('sub_sta_ids')
+    elements = data_json.get('elements')
+    if years is None or not isinstance(years, str) or ',' not in years:
+        raise Exception('缺少或格式错误的 years，需形如 YYYY,YYYY')
+    if sta_ids is None or (isinstance(sta_ids, str) and len(sta_ids.strip()) == 0):
+        raise Exception('缺少 station_ids 或 station_id')
 
     # 2.参数处理
     if isinstance(elements, str):
-        elements = [elements]
+        elements = [e.strip() for e in elements.split(',') if e.strip()]
+    if isinstance(elements, list):
+        elements = [str(e).strip() for e in elements if str(e).strip()]
 
     uuid4 = uuid.uuid4().hex
     result_dict['uuid'] = uuid4
@@ -42,10 +53,30 @@ def feature_stats_handler(data_json):
         os.chmod(data_dir, 0o007 | 0o070 | 0o700)
     
     if isinstance(sta_ids, list):
-        sta_ids = [str(ids) for ids in sta_ids]
+        sta_ids = [str(ids).strip() for ids in sta_ids if str(ids).strip()]
         sta_ids = ','.join(sta_ids)
-    if isinstance(sta_ids, int):
+    elif isinstance(sta_ids, int):
         sta_ids = str(sta_ids)
+    elif isinstance(sta_ids, str):
+        sta_ids = ','.join([s.strip() for s in sta_ids.split(',') if s.strip()])
+    
+    if sub_sta_ids is not None:
+        if isinstance(sub_sta_ids, list):
+            sub_sta_ids = [str(ids).strip() for ids in sub_sta_ids if str(ids).strip()]
+            sub_sta_ids = ','.join(sub_sta_ids)
+        elif isinstance(sub_sta_ids, int):
+            sub_sta_ids = str(sub_sta_ids)
+        elif isinstance(sub_sta_ids, str):
+            sub_sta_ids = ','.join([s.strip() for s in sub_sta_ids.split(',') if s.strip()])
+        parts = [p for p in sta_ids.split(',') if p]
+        sub_parts = [p for p in sub_sta_ids.split(',') if p]
+        seen = set()
+        merged = []
+        for p in parts + sub_parts:
+            if p and p not in seen:
+                merged.append(p)
+                seen.add(p)
+        sta_ids = ','.join(merged)
 
     # 3.拼接需要下载的参数
     yearly_elements = ''
@@ -147,6 +178,8 @@ def feature_stats_handler(data_json):
 
     # 6.结果生成
     result_list = []  # 用于生成所有保存路径
+    result_path = []
+
     for ele in elements:
 
         if ele == 'TEM':
@@ -157,6 +190,7 @@ def feature_stats_handler(data_json):
 
             try:
                 report_path = report_path.replace(cfg.INFO.IN_DATA_DIR, cfg.INFO.OUT_DATA_DIR)
+                result_path.append(report_path)
                 result_dict.temperature['report'] = report_path.replace(cfg.INFO.OUT_DATA_DIR, cfg.INFO.OUT_DATA_URL)
             except:
                 result_dict.temperature['report'] = None
@@ -174,6 +208,7 @@ def feature_stats_handler(data_json):
             # report
             try:
                 report_path = report_path.replace(cfg.INFO.IN_DATA_DIR, cfg.INFO.OUT_DATA_DIR)
+                result_path.append(report_path)
                 result_dict['report'] = report_path.replace(cfg.INFO.OUT_DATA_DIR, cfg.INFO.OUT_DATA_URL)
             except:
                 result_dict['report'] = None
@@ -181,6 +216,7 @@ def feature_stats_handler(data_json):
         elif ele == 'PRE':
             result_dict.precipitation = edict()
             basic_pre_yearly, basic_pre_accum, report_path = key_pre_statistics(daily_df, data_dir)
+            result_path.append(report_path)
             result_dict.precipitation['历年'] = basic_pre_yearly
             result_dict.precipitation['累年各月'] = basic_pre_accum
 
@@ -195,6 +231,7 @@ def feature_stats_handler(data_json):
         elif ele == 'SNOW':
             result_dict.snow_depth = edict()
             basic_snow_yearly, basic_snow_accum, report_path = key_snow_statistics(daily_df, data_dir)
+            result_path.append(report_path)
             result_dict.snow_depth['历年'] = basic_snow_yearly
             result_dict.snow_depth['累年各月'] = basic_snow_accum
 
@@ -209,6 +246,7 @@ def feature_stats_handler(data_json):
         elif ele == 'FRS':
             result_dict.frs_depth = edict()
             basic_frs_yearly, basic_frs_accum, report_path = key_frs_statistics(daily_df, data_dir)
+            result_path.append(report_path)
             result_dict.frs_depth['历年'] = basic_frs_yearly
             result_dict.frs_depth['累年各月'] = basic_frs_accum
 
@@ -220,6 +258,24 @@ def feature_stats_handler(data_json):
 
             result_list.append(OrderedDict(zip(['历年冻土深度统计', '累年各月冻土深度统计'], [basic_frs_yearly, basic_frs_accum])))
 
+    if len(result_path) == 0:
+        result_dict['report'] = None
+    else:
+        try:
+            new_docx_path = os.path.join(data_dir, 'weather_phenomena_days.docx')
+            master = Document(result_path[0])
+            middle_new_docx = Composer(master)
+            for word in result_path[1:]:  # 从第二个文档开始追加
+                word_document = Document(word)
+                middle_new_docx.append(word_document)
+            middle_new_docx.save(new_docx_path)
+            new_docx_path = new_docx_path.replace(cfg.INFO.IN_DATA_DIR, cfg.INFO.OUT_DATA_DIR)
+            result_dict['report'] = new_docx_path.replace(cfg.INFO.OUT_DATA_DIR, cfg.INFO.OUT_DATA_URL)
+
+        except Exception as e:
+            print(f"发生错误：{e}")
+            result_dict['report'] = None
+            
     # 6.结果保存
     if cfg.INFO.SAVE_RESULT:
         result_dict['csv'] = save_cmadaas_data(data_dir, mon_data=monthly_df, day_data=daily_df)
@@ -231,6 +287,7 @@ if __name__=='__main__':
     data_json={
   "years": "1985,2009",
   "station_ids": "52754",
+  "sub_sta_ids": "52863",
   "elements": ["TEM","WIND","PRE","FRS","SNOW"],
   "id": "uuid",
   "is_async": 0,
@@ -245,3 +302,4 @@ if __name__=='__main__':
 }
     
     
+    a=feature_stats_handler(data_json)

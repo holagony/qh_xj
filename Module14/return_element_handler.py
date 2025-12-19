@@ -1,4 +1,3 @@
-from Report.code.Module04.re_tem import re_tem_report_pg
 import logging
 import os
 import uuid
@@ -18,6 +17,10 @@ from Utils.get_local_data import get_local_data
 from Module00.wrapped.check import check
 from Module04.module04_utils import time_revision, height_revision, get_station
 from Report.code.Module04.re_wind import re_wind_report,re_wind_report_pg
+from Report.code.Module04.re_snow import re_snow_report,re_snow_report_pg
+from Report.code.Module04.re_tem import re_tem_report,re_tem_report_pg
+from Report.code.Module04.re_frs import re_frs_report,re_frs_report_pg
+
 from Utils.get_url_path import save_cmadaas_data
 from Module04.wrapped.return_period_wind import calc_return_period_wind
 from Module04.wrapped.return_period_pre import calc_return_period_pre
@@ -240,9 +243,17 @@ class workerReturnWind:
                     r = frs_calc.run()
                     r['uuid'] = uuid4
                     try:
-                        report_path = re_frs_report(r, daily_df, data_dir)
-                        report_path = report_path.replace(cfg.INFO.IN_DATA_DIR, cfg.INFO.OUT_DATA_DIR)
-                        r['report'] = report_path.replace(cfg.INFO.OUT_DATA_DIR, cfg.INFO.OUT_DATA_URL)
+
+                        
+                        if len(fitting_method) == 2:
+                            report_path = re_frs_report(r, daily_df, data_dir)
+                            report_path = report_path.replace(cfg.INFO.IN_DATA_DIR, cfg.INFO.OUT_DATA_DIR)
+                            r['report'] = report_path.replace(cfg.INFO.OUT_DATA_DIR, cfg.INFO.OUT_DATA_URL)
+                        else:
+                            report_path = re_frs_report_pg(r, daily_df, fitting_method[0], data_dir)
+                            report_path = report_path.replace(cfg.INFO.IN_DATA_DIR, cfg.INFO.OUT_DATA_DIR)
+                            r['report'] = report_path.replace(cfg.INFO.OUT_DATA_DIR, cfg.INFO.OUT_DATA_URL)
+                            
                     except Exception as e:
                         r['report'] = None
                     if 'img_save_path' in r:
