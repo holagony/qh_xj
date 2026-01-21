@@ -67,7 +67,7 @@ if __name__ != '__main__':
     logging.basicConfig(format='%(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s', datefmt='%a, %d %b %Y %H:%M:%S')
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=80, debug=False)
+    app.run(host='0.0.0.0', port=80, debug=True)
 
     # 新疆：WIN_S_AVG_W 和 青海：WIN_S_Avg__W
     # element_ch.csv也要修改
