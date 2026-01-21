@@ -132,7 +132,7 @@ def time_consistency_report(result_dict,sta_ids,sta_name,data_dir):
 
         plt.tick_params(axis='both', direction='in')
         plt.xlabel('年')
-        plt.ylabel(keys)
+        plt.ylabel(dic['ele']+'（'+dic['units']+'）')
         year_min = mean_tem['年份'].min()
         year_max = mean_tem['年份'].max()
         num_ticks = 10
