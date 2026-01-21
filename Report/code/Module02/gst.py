@@ -20,6 +20,7 @@ from docx.enum.table import WD_TABLE_ALIGNMENT
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from Report.code.Function.plot_picture import plot_picture
 from Report.code.Function.plot_picture import plot_picture_2
+from scipy import stats
 
 plt.rcParams['font.sans-serif'] = ['SimHei'] 
 plt.rcParams['axes.unicode_minus'] = False 
@@ -127,7 +128,18 @@ def gst_report(basic_gst_yearly,basic_gst_accum,post_yearly_df,data_dir):
     else:
         dic['average_gst_slope']='下降'
     
-    average_gst_picture_hournum=plot_picture(basic_gst_yearly, '年份','平均地面温度(℃)','平均地面温度(℃)','℃','历年平均地面温度变化.png',0.5,0.5,data_dir)
+    y_fit_avg = slope * valid_years.astype(float) + intercept
+    r_avg = float(np.corrcoef(valid_gstperatures.astype(float), y_fit_avg.astype(float))[0,1]) if len(valid_gstperatures) >= 3 else np.nan
+    if not np.isnan(r_avg):
+        df_avg = len(valid_gstperatures) - 2
+        t_avg = r_avg * np.sqrt(df_avg / max(1e-12, 1 - r_avg**2))
+        p_avg = float(2 * stats.t.sf(np.abs(t_avg), df_avg))
+    else:
+        p_avg = 1.0
+    dic['average_R'] = round(r_avg,3) if not np.isnan(r_avg) else None
+    dic['average_sig_005'] = '通过' if p_avg < 0.05 else '未通过'
+    dic['average_trend_text'] = f"相关系数{dic['average_sig_005']}α=0.05显著性检验"
+    average_gst_picture_hournum=plot_picture(basic_gst_yearly, '年份','平均地面温度(℃)','平均地面温度(℃)','℃','历年平均地面温度变化.png',0.5,0.5,data_dir,R=dic.get('average_R'))
     
     # 平均最高地面温度
     mask = ~np.isnan(basic_gst_yearly['平均最高地面温度(℃)'])
@@ -138,7 +150,18 @@ def gst_report(basic_gst_yearly,basic_gst_accum,post_yearly_df,data_dir):
         dic['max_gst_slope']='上升'
     else:
         dic['max_gst_slope']='下降'
-    max_gst_picture_hournum=plot_picture(basic_gst_yearly, '年份','平均最高地面温度(℃)','地面温度(℃)','℃','历年平均最高地面温度变化.png',0.5,0.5,data_dir)
+    y_fit_max = slope * valid_years.astype(float) + intercept
+    r_max = float(np.corrcoef(valid_gstperatures.astype(float), y_fit_max.astype(float))[0,1]) if len(valid_gstperatures) >= 3 else np.nan
+    if not np.isnan(r_max):
+        df_max = len(valid_gstperatures) - 2
+        t_max = r_max * np.sqrt(df_max / max(1e-12, 1 - r_max**2))
+        p_max = float(2 * stats.t.sf(np.abs(t_max), df_max))
+    else:
+        p_max = 1.0
+    dic['max_R'] = round(r_max,3) if not np.isnan(r_max) else None
+    dic['max_sig_005'] = '通过' if p_max < 0.05 else '未通过'
+    dic['max_trend_text'] = f"相关系数{dic['max_sig_005']}α=0.05显著性检验"
+    max_gst_picture_hournum=plot_picture(basic_gst_yearly, '年份','平均最高地面温度(℃)','平均最高地面温度(℃)','℃','历年平均最高地面温度变化.png',0.5,0.5,data_dir,R=dic.get('max_R'))
 
     # 平均最低地面温度
     mask = ~np.isnan(basic_gst_yearly['平均最低地面温度(℃)'])
@@ -149,7 +172,18 @@ def gst_report(basic_gst_yearly,basic_gst_accum,post_yearly_df,data_dir):
         dic['min_gst_slope']='上升'
     else:
         dic['min_gst_slope']='下降'
-    min_gst_picture_hournum=plot_picture(basic_gst_yearly, '年份','平均最低地面温度(℃)','地面温度(℃)','℃','历年最低平均地面温度变化.png',0.5,0.5,data_dir)
+    y_fit_min = slope * valid_years.astype(float) + intercept
+    r_min = float(np.corrcoef(valid_gstperatures.astype(float), y_fit_min.astype(float))[0,1]) if len(valid_gstperatures) >= 3 else np.nan
+    if not np.isnan(r_min):
+        df_min = len(valid_gstperatures) - 2
+        t_min = r_min * np.sqrt(df_min / max(1e-12, 1 - r_min**2))
+        p_min = float(2 * stats.t.sf(np.abs(t_min), df_min))
+    else:
+        p_min = 1.0
+    dic['min_R'] = round(r_min,3) if not np.isnan(r_min) else None
+    dic['min_sig_005'] = '通过' if p_min < 0.05 else '未通过'
+    dic['min_trend_text'] = f"相关系数{dic['min_sig_005']}α=0.05显著性检验"
+    min_gst_picture_hournum=plot_picture(basic_gst_yearly, '年份','平均最低地面温度(℃)','平均最低地面温度(℃)','℃','历年最低平均地面温度变化.png',0.5,0.5,data_dir,R=dic.get('min_R'))
 
     
     dic['average_picture'] = InlineImage(doc, average_gst_picture_hournum, width=Mm(130))

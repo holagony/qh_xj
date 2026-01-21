@@ -200,9 +200,14 @@ def basic_gst_statistics(gst_day, gst_month, data_dir):
 if __name__ == '__main__':
     yearly_df = pd.read_csv(cfg.FILES.QH_DATA_YEAR)
     monthly_df = pd.read_csv(cfg.FILES.QH_DATA_MONTH)
-    post_yearly_df = yearly_data_processing(yearly_df, '2000', '2020')
-    post_monthly_df = monthly_data_processing(monthly_df, '2000', '2020')
+    post_yearly_df = yearly_data_processing(yearly_df, '2000, 2020')
+    post_monthly_df = monthly_data_processing(monthly_df, '2000, 2020')
     post_yearly_df = post_yearly_df[post_yearly_df['Station_Id_C']=='52866']
     post_monthly_df = post_monthly_df[post_monthly_df['Station_Id_C']=='52866']
-    data_dir = r'C:/Users/MJY/Desktop'
+    data_dir = r'D:\Project/data'
     basic_gst_yearly, basic_gst_accum, report_path = basic_gst_statistics(post_yearly_df, post_monthly_df,data_dir)
+
+    gst_day=post_yearly_df
+    gst_month=post_monthly_df
+    data_dir=data_dir
+

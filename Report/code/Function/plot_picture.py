@@ -11,7 +11,7 @@ import os
 from adjustText import adjust_text
 
 
-def plot_picture(df, namex, namey, namelable, unit, namepng, num1, num2, data_dir):
+def plot_picture(df, namex, namey, namelable, unit, namepng, num1, num2, data_dir, R=None):
     """
     绘制和保存地面温度趋势图。
 
@@ -31,8 +31,8 @@ def plot_picture(df, namex, namey, namelable, unit, namepng, num1, num2, data_di
     slope, intercept = np.polyfit(valid_years, valid_gstperatures, 1)
 
     # 求R2
-    R = np.corrcoef(valid_gstperatures, slope * valid_years + intercept)
-    R2 = R[0, 1]**2
+    R_calc = np.corrcoef(valid_gstperatures, slope * valid_years + intercept)
+    R2 = R_calc[0, 1]**2
 
     # 绘图
     plt.figure(figsize=(9, 4))
@@ -85,6 +85,8 @@ def plot_picture(df, namex, namey, namelable, unit, namepng, num1, num2, data_di
         equation_text = f'y={slope:.2f}x+{intercept:.2f}\n\n趋势率={slope*10:.2f}{unit}/10a'
     else:
         equation_text = f'y={slope:.2f}x{intercept:.2f}\n\n趋势率={slope*10:.2f}{unit}/10a'
+    if R is not None:
+        equation_text = equation_text + f'\n\n$R^2$={float(R2):.3f}'
     
     # 智能选择最佳初始位置，而不是固定位置
     x_range = year_max - year_min
