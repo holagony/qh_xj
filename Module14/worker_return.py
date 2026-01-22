@@ -8,7 +8,7 @@ Created on Thu Feb 22 15:28:40 2024
 import json
 import simplejson
 import requests
-from Module14.return_element_handler import workerReturnWind
+from Module14.return_element_handler import workerReturnPeriod
 
 
 def callback(url, result_id, result):
@@ -19,11 +19,11 @@ def callback(url, result_id, result):
     requests.put(url, headers=header, data=json.dumps(_json))
 
 
-class workerReturn:
+class workerReturnPeriod:
 
     def act(self, json_str):
         data_json = json.loads(json_str)
-        result_dict = workerReturnWind(data_json)
+        result_dict = workerReturnPeriod(data_json)
         return_data = simplejson.dumps({'code': 200, 'msg': 'success', 'data': result_dict}, ensure_ascii=False, ignore_nan=True)
         result_id = data_json.get('id')
         callback_url = data_json.get('callback')

@@ -4,146 +4,27 @@ import probscale
 import matplotlib
 import matplotlib.pyplot as plt
 from scipy import stats
-import metpy.calc as mcalc
-from metpy.units import units
 import Utils.distribution_fitting as fitting
 from Utils.config import cfg
 from Utils.ordered_easydict import OrderedEasyDict as edict
 from Utils.data_processing import daily_data_processing
-from Utils.pearson3 import pearson_type3
-from Module01.wrapped.correlation_analysis import linear_regression
 from matplotlib import font_manager
 font = font_manager.FontProperties(fname=cfg.FILES.FONT)
 matplotlib.use('agg')
 
 
 class calc_return_period_wind:
-    '''
-    重现期最大风速及风压计算
-    df_sequence: 输入日数据要素序列 dataframe
-    relocation_year: 迁站订正年份 list
-    height_revision_year: 参证站的高度订正年份 list
-    measure_height: 参证站的高度订正年份对应的测风高度 list
-    profile_index_main: 参证站的高度订正年份对应的风廓线指数 list
-    return_years: 重现期年份 list
-    CI: 置信水平 list
-    fitting_method: 重现期计算方法 list
-    element_name: 计算的要素中文名 str
-    '''
 
-    def __init__(self, df_sequence, relocation_year, height_revision_year, measure_height, profile_index_main, 
-                 return_years, CI, fitting_method, img_path, from_database, sub_df, threshold, intercept,main_station):
+    def __init__(self, df_sequence, return_years, fitting_method, img_path, main_station):
 
         self.main_sequence = df_sequence
-        self.relocation_year = relocation_year
-        self.height_revision_year = height_revision_year
-        self.measure_height = measure_height
-        self.profile_index_main = profile_index_main
         self.return_years = return_years
-        self.CI = CI
         self.fitting_method = fitting_method
         self.img_path = img_path
-        self.from_database = from_database
-        self.sub_df = sub_df
-        self.intercept = intercept
-        self.threshold = threshold
         self.main_station = main_station
-
         if self.threshold == None:
             self.threshold = 0
 
-    def wind_consistency_revision(self, data_in):
-        '''
-        迁站订正
-        '''
-        data_section = []
-        mean_list = []
-
-        for i, time in enumerate(self.relocation_year):
-            if i == 0:
-                data = data_in[data_in.index[0]:str(time - 1)]
-                data_section.append(data)
-                mean_val = data.mean()
-                mean_list.append(mean_val)
-
-            elif i > 0 and time != self.relocation_year[-1]:
-                data = data_in[str(self.relocation_year[i - 1]):str(self.relocation_year[i] - 1)]
-                data_section.append(data)
-                mean_val = data.mean()
-                mean_list.append(mean_val)
-
-            if time == self.relocation_year[-1]:
-                data = data_in[str(self.relocation_year[i - 1]):data_in.index[-1]]
-                data_section.append(data)
-                mean_val = data.mean()
-                mean_list.append(mean_val)
-
-        length = [len(section) for section in data_section]
-        idx = length.index(max(length))
-        weights = mean_list[idx] / np.array(mean_list)
-
-        data_out = [(weights[j] * data_section[j]).round(1) for j in range(len(data_section))]
-        data_out = pd.concat(data_out)
-        data_out = data_out.round(1)
-
-        return data_out
-
-    def wind_height_revision(self, data_in):
-        '''
-        高度订正
-        '''
-        zipped_info = zip(self.height_revision_year, self.measure_height, self.profile_index_main)
-
-        for info in zipped_info:
-            year = str(info[0])
-            if year in data_in.index:
-                v_z = data_in[year]
-                z = info[1]
-                alpha = info[2]
-                new_wind_s = v_z * (np.power((10 / z), alpha))
-                data_in[year] = new_wind_s
-
-        data_out = data_in.copy()
-        data_out = data_out.round(1)
-
-        return data_out
-    
-    def calc_correlation(self, main_df, sub_df):
-        '''
-        参证站和厂址站的相关性分析，以及厂址站重现期
-        '''
-        if self.from_database == 1:
-            pass
-        elif self.from_database == 0:
-            sub_win_daily = sub_df['WIN_S_Max'].to_frame()
-            sub_win_daily.columns = ['最大风速']
-        
-        sub_win_daily = sub_win_daily[sub_win_daily > self.threshold]
-        
-        # 参证站降水日数据
-        main_win = main_df['WIN_S_Max'].to_frame()
-        main_win = main_win[main_win > self.threshold]
-
-        # 参证站数据和厂址站数据合并，并删除时间不对应的行
-        concat_win = pd.concat([main_win, sub_win_daily], axis=1)
-        concat_win = concat_win.dropna(how='any')
-
-        if len(concat_win) < 200:  # 没有数据的情况
-            params = np.nan
-            data_points = np.nan
-        else:
-            # 计算线性回归参数
-            w, b, r_square = linear_regression(concat_win['WIN_S_Max'], concat_win['最大风速'], intercept=self.intercept)
-            w = round(w,3)
-            b = round(b,3)
-            r_square = round(r_square,3)
-            params = [w, b, r_square]
-            concat_win = concat_win.round(1)
-            concat_win = concat_win.sample(n=200)
-            data_points = concat_win.values.tolist()
-
-        return params, data_points
-    
     def calc_return_period_values(self, data_in):
         '''
         计算参证站不同重现期的数值
@@ -173,91 +54,7 @@ class calc_return_period_wind:
             max_values_dict['皮尔逊Ⅲ型'] = max_values.round(1).tolist()
             ks_values['P3_ks'] = ks_result
 
-            # 2023新增P3调参
-            # p3_result = pearson_type3(element_name='Wind', 
-            #                           data=data_in, 
-            #                           rp=self.return_years,
-            #                           img_path=None, 
-            #                           mode=1, sv_ratio=0, ex_fitting=True, manual_cs_cv=None)
-            # p3_base = p3_result
-
-        return params_dict, max_values_dict, ks_values#, p3_base
-
-    def calc_confidence_interval(self, data_in):
-        '''
-        计算参证站重现期的置信区间
-        '''
-        ci_result = []
-        ci_num = 500
-
-        # 置信水平对应的百分位区间 array shape(n,2)
-        ci_array = []
-        for ci in self.CI:
-            bar = (100 - ci) / 2
-            left = 100 - ci - bar
-            right = ci + bar
-            ci_array.append([left, right])
-
-        ci_array = np.array(ci_array) / 100
-
-        if 'Gumbel' in self.fitting_method:
-            for i in range(ci_num):
-                bootstrap = data_in.sample(n=len(data_in) - 5, replace=True, random_state=i)
-                loc, scale = fitting.estimate_parameters_gumbel(bootstrap, method='MOM')
-                max_values = fitting.get_max_values_gumbel(self.return_years, loc, scale)  # numpy array
-                max_values = max_values.reshape(1, -1)
-
-                if i == 0:
-                    all_max_values = max_values
-                else:
-                    all_max_values = np.concatenate((all_max_values, max_values), axis=0)  # shape(1000,5) 每行是一个重现期结果, 每列是相应的重现期
-
-            # data = np.random.randint(0,500,size=20).reshape(4,5)
-            # result = np.quantile(data, CI_array, axis=0) # CI_array:(3,2), result:(3,2,5) 3代表不同区间, 2行代表计算出来的上下限数值, 5列对应不同重现期
-            gumbel_ci = np.quantile(all_max_values, ci_array, axis=0)
-            gumbel_ci = gumbel_ci.transpose(2, 0, 1)
-            gumbel_ci = gumbel_ci.reshape(-1, 2)
-            ci_result.append(gumbel_ci)
-
-        if 'P3' in self.fitting_method:
-            for i1 in range(ci_num):
-                bootstrap = data_in.sample(n=len(data_in) - 5, replace=True, random_state=i1)
-                skew, loc, scale = fitting.estimate_parameters_pearson3(bootstrap, method='normal')
-                max_values = fitting.get_max_values_pearson3(self.return_years, 0, skew, loc, scale)
-                max_values = max_values.reshape(1, -1)
-
-                if i1 == 0:
-                    all_max_values = max_values
-                else:
-                    all_max_values = np.concatenate((all_max_values, max_values), axis=0)  # shape(1000,5) 每行是一个重现期结果, 每列是相应的重现期
-
-            p3_ci = np.quantile(all_max_values, ci_array, axis=0)
-            p3_ci = p3_ci.transpose(2, 0, 1)
-            p3_ci = p3_ci.reshape(-1, 2)
-            ci_result.append(p3_ci)
-
-        # 所有分布的结果拼接
-        ci_result = np.array(ci_result)
-        ci_result = ci_result.transpose(1, 0, 2)
-        ci_result = ci_result.reshape(-1, 2 * len(self.fitting_method))
-        ci_result = ci_result.round(1)
-
-        # ci_result转成dataframe
-        interval = self.CI
-        index = pd.MultiIndex.from_product([self.return_years, interval], names=['重现期(年)', '置信水平(%)'])
-        columns = []
-
-        for col in self.fitting_method:
-            if col == 'Gumbel':
-                columns.append('下限（耿贝尔）')
-                columns.append('上限（耿贝尔）')
-            else:
-                columns.append('下限(皮尔逊Ⅲ型)')
-                columns.append('上限(皮尔逊Ⅲ型)')
-
-        ci_result = pd.DataFrame(ci_result, columns=columns, index=index).reset_index()
-
-        return ci_result
+        return params_dict, max_values_dict, ks_values
 
     def get_fig_ax(self):
         fig, ax = plt.subplots(figsize=(7, 5))
@@ -272,8 +69,6 @@ class calc_return_period_wind:
 
         # 定义图表上X轴的可见概率范围
         xlim_min, xlim_max = 0.1, 99.5
-
-        # --- 根据可见范围计算Y轴的最佳范围 ---
 
         # 1. 筛选在可见X范围内的理论曲线数据
         visible_mask_sample = (sample_x >= xlim_min) & (sample_x <= xlim_max)
@@ -314,7 +109,6 @@ class calc_return_period_wind:
                 y_min, y_max = 0, 50
         
         # --- 开始画图 ---
-        
         ax.grid(True)
         ax.set_xlabel('KS-test: ' + str(ks_val.round(3)) + '   频率P(%)', fontproperties=font)
         ax.set_ylabel(new_y_axis_name, fontproperties=font)
@@ -360,8 +154,6 @@ class calc_return_period_wind:
 
         # 创建字典
         result_dict = edict()
-        result_dict.extra_station = edict()
-        # result_dict.time_range = main_wind_seq.index.tolist()
         result_dict.return_years = self.return_years
         result_dict.wind_data = year_vals_save.to_dict(orient='records')
         result_dict.wind_data_i = year_vals_i_save.to_dict(orient='records')
@@ -386,73 +178,11 @@ class calc_return_period_wind:
             params_dict, max_values_dict, ks_values = self.calc_return_period_values(main_wind_seq)
             result_dict.main_return_result['max_values'] = max_values_dict
             result_dict.main_return_result['distribution_params'] = params_dict
-            # result_dict['p3_base'] = p3_base
             
             # 极大风速重现期
             params_dict_i, max_values_dict_i, ks_values_i = self.calc_return_period_values(main_wind_seq_i)
             result_dict.main_return_result['max_values_i'] = max_values_dict_i
             result_dict.main_return_result['distribution_params_i'] = params_dict_i
-            
-        # Step4 参证站重现期的置信区间计算
-        if self.CI is not None and len(self.CI) != 0:
-            ci_result = self.calc_confidence_interval(main_wind_seq)
-            result_dict.confidence_interval = ci_result.to_dict(orient='records')
-
-        # Step5 厂址站相关分析 重现期转换
-        if self.sub_df is not None and len(self.sub_df) != 0:
-            params, data_points = self.calc_correlation(self.main_sequence, self.sub_df)
-
-            if params is np.nan:
-                result_dict.extra_station['max_values'] = np.nan
-                result_dict.extra_station['params'] = np.nan
-                result_dict.extra_station['data'] = np.nan
-                result_dict.extra_station['msg'] = '筛选后没有数据，无法计算厂址站相关系数和重现期结果'
-            else:
-                sub_max_vals = edict()
-                for key in list(max_values_dict.keys()):
-                    max_vals = np.array(max_values_dict[key]) * params[0] + params[1]
-                    sub_max_vals[key] = max_vals.round(1).tolist()
-
-                result_dict.extra_station['max_values'] = sub_max_vals
-                result_dict.extra_station['params'] = params
-                result_dict.extra_station['data'] = data_points
-
-        # Step6 空气密度、阵风系数和重现期风压计算
-        # 空气密度
-        # tem = np.array(self.main_sequence['TEM_Avg']) * units('degC')
-        # e0 = mcalc.saturation_vapor_pressure(tem).m / 100  # 饱和水气压 hpa
-        # e = np.multiply((self.main_sequence['RHU_Avg'] / 100).values, e0)
-        # rho_2 = 1.276e-3 * (self.main_sequence['PRS_Avg'].values - 0.378 * e) / (1 + 3.66e-3 * self.main_sequence['TEM_Avg'].values)  # 2m高度的空气密度
-        # rho_10 = rho_2 * np.exp(-0.0001 * (10 - 2))  # 订正到10m高度的空气密度
-        # rho_10 = np.nanmean(rho_10)
-        
-        # new 根据《风电场风能资源评估方法》中的公式进行计算
-        prs_mean = self.main_sequence['PRS_Avg'].mean()
-        tem_mean = self.main_sequence['TEM_Avg'].mean()
-        rho_10 = prs_mean * 100/ ((tem_mean + 273.15)* 287)
-        result_dict['空气密度'] = rho_10.round(3) # kg/m3
-
-        # 阵风系数
-        temp_wind = self.main_sequence[['WIN_S_2mi_Avg','WIN_S_Inst_Max']]
-        temp_wind.dropna(how='any')
-        gust = (temp_wind['WIN_S_Inst_Max'].mean()/temp_wind['WIN_S_2mi_Avg'].mean())
-        gust = np.nanmean(gust)
-        # gust = gust[~gust.isin([np.nan, np.inf, -np.inf])].round(2)
-        result_dict['阵风系数'] = gust.round(3)
-
-        # 计算风压
-        w_pressure = edict()
-        for key, value in max_values_dict.items():
-            w_pressure[key] = [((val**2)*rho_10*(0.5)*1e-3).round(3) for val in max_values_dict[key]] # 基本风压 kN/m**2
-            
-        data_prs=pd.read_csv(cfg.FILES.WIND_SNOW_PRESSURE,encoding='gbk')
-        data_prs = data_prs[(data_prs['类别'] == '风压 ') & (data_prs['站号'] == int(self.main_station))]
-        if len(data_prs) == 1:
-            w_pressure['参考值（国标）']=[ data_prs[str(y)].values[0] if str(y) in data_prs.columns else None for y in self.return_years]
-        else:
-            w_pressure['参考值（国标）']=[ None for y in self.return_years]
-                
-        result_dict.main_return_result['wind_pressure'] = w_pressure
 
         # Step7 参证站重现期画图
         result_dict.img_save_path = edict()

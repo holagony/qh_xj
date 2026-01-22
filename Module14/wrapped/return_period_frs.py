@@ -14,10 +14,7 @@ font = font_manager.FontProperties(fname=cfg.FILES.FONT)
 matplotlib.use('agg')
 
 
-class calc_return_period_snow:
-    '''
-    重现期最大积雪深度及雪压计算
-    '''
+class calc_return_period_frs:
 
     def __init__(self, df_sequence, return_years, fitting_method, img_path, main_station):
         self.df_sequence = df_sequence
@@ -119,6 +116,7 @@ class calc_return_period_snow:
                 y_min, y_max = 0, 50
 
         # --- 开始画图 ---
+
         ax.grid(True)
         ax.set_xlabel('KS-test: ' + str(ks_val.round(3)) + '   频率P(%)', fontproperties=font)
         ax.set_ylabel(new_y_axis_name, fontproperties=font)
@@ -148,40 +146,32 @@ class calc_return_period_snow:
         result_dict = edict()
         result_dict.return_years = self.return_years
 
-        snow_data = self.df_sequence['Snow_Depth_Max'].resample('1A').max()
-        snow_data = snow_data.round(1).dropna()
+        # 将两列最大值作为新列 FRX_Depth_Max，再按年取最大
+        self.df_sequence['FRX_Depth_Max'] = self.df_sequence[['FRS_1st_Bot', 'FRS_2nd_Bot']].max(axis=1).round(1)
+        frs_data = self.df_sequence['FRX_Depth_Max'].resample('1A').max().dropna()
 
-        if snow_data.shape[0] < 10:
+        if frs_data.shape[0] < 10:
             raise Exception('该参证站日数据存在缺测，转换后得到有效历年样本小于10个，不能进行后续重现期计算')
 
         # 保存原始数据（包含0值）用于展示
-        snow_data_save = snow_data.to_frame().copy()
-        snow_data_save.insert(loc=0, column='year', value=snow_data_save.index.year)
-        snow_data_save.columns = ['年份', '最大积雪深度(cm)']
-        snow_data_save.reset_index(drop=True, inplace=True)
-        result_dict.data = snow_data_save.to_dict(orient='records')
+        frs_data_save = frs_data.to_frame().copy()
+        frs_data_save.insert(loc=0, column='year', value=frs_data_save.index.year)
+        frs_data_save.columns = ['年份', '最大冻土深度(cm)']
+        frs_data_save.reset_index(drop=True, inplace=True)
+        result_dict.data = frs_data_save.to_dict(orient='records')
 
         # 过滤掉0值，用于重现期计算
-        snow_data_filtered = snow_data[snow_data > 0]
-        if len(snow_data_filtered) < 5:
-            raise Exception(f'过滤0值后的有效积雪深度数据不足5个样本（当前{len(snow_data_filtered)}个），无法进行重现期计算')
-
-        # 添加统计信息到结果中
-        result_dict.data_statistics = {
-            '总样本数': len(snow_data),
-            '有效样本数（>0cm）': len(snow_data_filtered),
-            '零值样本数': len(snow_data) - len(snow_data_filtered),
-            '零值比例(%)': round((len(snow_data) - len(snow_data_filtered)) / len(snow_data) * 100, 1)
-        }
+        frs_data_filtered = frs_data[frs_data > 0]
+        if len(frs_data_filtered) < 5:
+            raise Exception(f'过滤0值后的有效冻土深度数据不足5个样本（当前{len(frs_data_filtered)}个），无法进行重现期计算')
 
         # Step1 频率转换
-        # convert_periods = self.frequency_conversion()
         convert_periods = self.return_years
 
         # Step3 重现期计算（使用过滤后的数据）
         if self.fitting_method is not None:
             result_dict.main_return_result = edict()
-            params_dict, max_values_dict, ks_values = self.calc_return_period_values(snow_data_filtered, convert_periods)
+            params_dict, max_values_dict, ks_values = self.calc_return_period_values(frs_data_filtered, convert_periods)
             result_dict.main_return_result['max_values'] = max_values_dict
             result_dict.main_return_result['distribution_params'] = params_dict
 
@@ -192,12 +182,12 @@ class calc_return_period_snow:
 
         if 'Gumbel' in keys:
             y = fitting.get_max_values_gumbel(1 / (x / 100), params_dict['Gumbel'][0], params_dict['Gumbel'][1])
-            save_path = self.plot_result(fig, ax, snow_data_filtered, x, y, '积雪深度', 'Gumbel', ks_values['Gumbel_ks'])
+            save_path = self.plot_result(fig, ax, frs_data_filtered, x, y, '冻土深度', 'Gumbel', ks_values['Gumbel_ks'])
             result_dict.img_save_path['Gumbel_plot'] = save_path
 
         if 'P3' in keys:
             y = fitting.get_max_values_pearson3(1 / (x / 100), 0, params_dict['P3'][0], params_dict['P3'][1], params_dict['P3'][2])
-            save_path = self.plot_result(fig, ax, snow_data_filtered, x, y, '积雪深度', 'Pearson3', ks_values['P3_ks'])
+            save_path = self.plot_result(fig, ax, frs_data_filtered, x, y, '冻土深度', 'Pearson3', ks_values['P3_ks'])
             result_dict.img_save_path['P3_plot'] = save_path
 
         # 关闭图框
@@ -227,5 +217,5 @@ if __name__ == '__main__':
     CI = None
     fitting_method = ['Gumbel', 'P3']
     img_path = r'D:\Project'
-    snow = calc_return_period_snow(df_sequence, return_years, CI, fitting_method, img_path, '56067')
-    snow_result = snow.run()
+    frs = calc_return_period_frs(df_sequence, return_years, fitting_method, img_path, '56067')
+    frs_result = frs.run()
