@@ -17,12 +17,13 @@ class calc_return_period_pre:
     '''
     重现期降水以及降水历时重现期计算
     '''
-    def __init__(self, df_sequence, return_years, fitting_method, img_path):
+    def __init__(self, df_sequence, return_years, fitting_method, img_path, main_station):
 
         self.df_sequence = df_sequence
         self.return_years = return_years
         self.fitting_method = fitting_method
         self.img_path = img_path
+        self.main_station = main_station
 
     def calc_return_period_values(self, data_in):
         '''

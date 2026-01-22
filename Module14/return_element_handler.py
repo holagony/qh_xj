@@ -162,7 +162,8 @@ class workerReturnPeriod:
                 pre_calc = calc_return_period_pre(df_sequence=df_sequence,
                                                     return_years=return_years,
                                                     fitting_method=fitting_method,
-                                                    img_path=data_dir)
+                                                    img_path=data_dir,
+                                                    main_station=main_station)
                 r = pre_calc.run()
                 try:
                     if len(fitting_method) == 2:
@@ -188,7 +189,8 @@ class workerReturnPeriod:
                 snow_calc = calc_return_period_snow(df_sequence=df_sequence,
                                                     return_years=return_years,
                                                     fitting_method=fitting_method,
-                                                    img_path=data_dir)
+                                                    img_path=data_dir,
+                                                    main_station=main_station)
                 r = snow_calc.run()
                 try:
                     if len(fitting_method) == 2:
@@ -214,7 +216,8 @@ class workerReturnPeriod:
                 frs_calc = calc_return_period_frs(df_sequence=df_sequence,
                                                     return_years=return_years,
                                                     fitting_method=fitting_method,
-                                                    img_path=data_dir)
+                                                    img_path=data_dir,
+                                                    main_station=main_station)
                 r = frs_calc.run()
                 try:
                     if len(fitting_method) == 2:
