@@ -76,71 +76,62 @@ def feature_stats_handler(data_json):
             if p and p not in seen:
                 merged.append(p)
                 seen.add(p)
-        sta_ids = ','.join(merged)
+        all_sta_ids = ','.join(merged)
 
     # 3.拼接需要下载的参数
-    yearly_elements = ''
-    monthly_elements = ''
+    # yearly_elements = ''
+    # monthly_elements = ''
+    # yearly_df = None
+    # monthly_df = None
     daily_elements = ''
-    yearly_df = None
-    monthly_df = None
     daily_df = None
 
     for ele in elements:
         if ele == 'TEM':
             # yearly_elements += 'TEM_Avg,TEM_Max_Avg,TEM_Min_Avg,TEM_Max,V12011_067,TEM_Min,V12012_067,'
-            monthly_elements += 'TEM_Avg,TEM_Max,TEM_Min,TEM_Max_Avg,TEM_Min_Avg,TEM_Max_ODay_C,TEM_Min_ODay_C,'
-            daily_elements += 'TEM_Avg,TEM_Max,TEM_Min,'
+            # onthly_elements += 'TEM_Avg,TEM_Max,TEM_Min,TEM_Max_Avg,TEM_Min_Avg,TEM_Max_ODay_C,TEM_Min_ODay_C,'
+            daily_elements += 'TEM_Max,TEM_Min,'
 
         elif ele == 'WIND':
             # yearly_elements += 'WIN_S_2mi_Avg,WIN_S_Max,WIN_D_S_Max_C,V11042_067,WIN_S_Inst_Max,WIN_D_INST_Max_C,WIN_S_INST_Max_ODate_C,WIN_D_Max_C,WIN_D_Max_Freq,'
             # 检查青海和新疆，如：WIN_S_AVG_W 和 WIN_S_Avg__W
-            monthly_elements += 'WIN_S_2mi_Avg,WIN_S_Max,WIN_S_Max_ODay_C,WIN_S_Inst_Max,WIN_S_INST_Max_ODay_C,'
-            daily_elements += 'WIN_S_2mi_Avg,WIN_S_Max,WIN_S_Inst_Max,'
+            # monthly_elements += 'WIN_S_2mi_Avg,WIN_S_Max,WIN_S_Max_ODay_C,WIN_S_Inst_Max,WIN_S_INST_Max_ODay_C,'
+            daily_elements += 'WIN_S_Max,WIN_S_Inst_Max,'
 
         elif ele == 'PRE':
             # yearly_elements += 'PRE_Time_2020,PRE_Max_Day,V13052_067,PRE_A0p1mm_Days,PRE_A10mm_Days,PRE_A25mm_Days,PRE_A50mm_Days,PRE_A100mm_Days,PRE_A150mm_Days,Days_Max_Coti_PRE,PRE_Conti_Max,PRE_LCDays_EMon,EDay_Max_Coti_PRE,NPRE_LCDays,NPRE_LCDays_EMon,NPRE_LCDays_EDay,PRE_Max_Conti,Days_Max_Conti_PRE,PRE_Coti_Max_EMon,PRE_Coti_Max_EDay,'
-            monthly_elements += 'PRE_Time_2020,PRE_Max_Day,PRE_Max_ODay_C,PRE_A0p1mm_Days,PRE_A10mm_Days,PRE_A25mm_Days,PRE_A50mm_Days,PRE_A100mm_Days,PRE_A150mm_Days,Days_Max_Coti_PRE,PRE_Conti_Max,EDay_Max_Coti_PRE,NPRE_LCDays,NPRE_LCDays_EDay,PRE_Max_Conti,Days_Max_Conti_PRE,PRE_Coti_Max_EDay,'
+            # monthly_elements += 'PRE_Time_2020,PRE_Max_Day,PRE_Max_ODay_C,PRE_A0p1mm_Days,PRE_A10mm_Days,PRE_A25mm_Days,PRE_A50mm_Days,PRE_A100mm_Days,PRE_A150mm_Days,Days_Max_Coti_PRE,PRE_Conti_Max,EDay_Max_Coti_PRE,NPRE_LCDays,NPRE_LCDays_EDay,PRE_Max_Conti,Days_Max_Conti_PRE,PRE_Coti_Max_EDay,'
             daily_elements += 'PRE_Time_2020,'
             
         elif ele == 'SNOW':
             # yearly_elements += 'Snow_Depth_Max,V13334_067,'
-            monthly_elements += 'Snow_Depth_Max,V13334_060_C,'
+            # monthly_elements += 'Snow_Depth_Max,V13334_060_C,'
             daily_elements += 'Snow_Depth,'
         
         elif ele == 'FRS':
-            monthly_elements += 'FRS_Depth_Max,'
+            # monthly_elements += 'FRS_Depth_Max,'
             daily_elements += 'FRS_1st_Bot,FRS_2nd_Bot,'
             
     # 4.数据获取
     if cfg.INFO.READ_LOCAL:
-        
         # year_eles = ('Station_Name,Station_Id_C,Lat,Lon,Datetime,Year,' + yearly_elements[:-1]).split(',')
-        month_eles = ('Station_Name,Station_Id_C,Lat,Lon,Datetime,Year,Mon,' + monthly_elements[:-1]).split(',')
+        # month_eles = ('Station_Name,Station_Id_C,Lat,Lon,Datetime,Year,Mon,' + monthly_elements[:-1]).split(',')
         day_eles = ('Station_Name,Station_Id_C,Lat,Lon,Datetime,Year,Mon,Day,' + daily_elements[:-1]).split(',')
-
         daily_df = pd.read_csv(cfg.FILES.QH_DATA_DAY)
-        monthly_df = pd.read_csv(cfg.FILES.QH_DATA_MONTH, low_memory=False)
-
+        # monthly_df = pd.read_csv(cfg.FILES.QH_DATA_MONTH, low_memory=False)
 
         if 'SNOW' in elements:
             daily_df['Snow_Depth'] = 20
-            
-        daily_df = get_local_data(daily_df, sta_ids, day_eles, years, 'Day')
-        monthly_df = get_local_data(monthly_df, sta_ids, month_eles, years, 'Month')
-    else:
-        day_ele_list = ['VAPOR','SSH']
-        other_ele_list = ['PRS', 'TEM', 'WIND', 'PRE', 'RH', 'GST', 'SNOW']
 
+        daily_df = get_local_data(daily_df, all_sta_ids, day_eles, years, 'Day')
+        # monthly_df = get_local_data(monthly_df, sta_ids, month_eles, years, 'Month')
+    else:
         # 天擎数据下载 and 数据前处理
         try:
-
-            monthly_df = get_cmadaas_monthly_data(years, monthly_elements, sta_ids)
-            monthly_df = monthly_data_processing(monthly_df, years)
-
-            daily_df = get_cmadaas_daily_data(years, daily_elements, sta_ids)
+            # monthly_df = get_cmadaas_monthly_data(years, monthly_elements, sta_ids)
+            # monthly_df = monthly_data_processing(monthly_df, years)
+            daily_df = get_cmadaas_daily_data(years, daily_elements, all_sta_ids)
             daily_df = daily_data_processing(daily_df, years)
-
         except Exception as e:
             raise Exception('天擎数据下载或处理失败')
 
@@ -149,10 +140,10 @@ def feature_stats_handler(data_json):
     result_dict.check_result = edict()
     
     # 移除末尾逗号并过滤空字符串
-    if yearly_elements.endswith(','):
-        yearly_elements = yearly_elements[:-1]
-    if monthly_elements.endswith(','):
-        monthly_elements = monthly_elements[:-1]
+    # if yearly_elements.endswith(','):
+    #     yearly_elements = yearly_elements[:-1]
+    # if monthly_elements.endswith(','):
+    #     monthly_elements = monthly_elements[:-1]
     if daily_elements.endswith(','):
         daily_elements = daily_elements[:-1]
     
@@ -162,12 +153,12 @@ def feature_stats_handler(data_json):
     #     check_result = checker.run()
     #     result_dict.check_result['使用的天擎年要素'] = check_result
 
-    if monthly_df is not None and len(monthly_df) != 0:
-        monthly_element_list = [e.strip() for e in monthly_elements.split(',') if e.strip()]
-        if monthly_element_list:  # 只有当列表不为空时才进行检查
-            checker = check(monthly_df, 'MS', monthly_element_list, [sta_ids], years[0], years[1])
-            check_result = checker.run()
-            result_dict.check_result['使用的天擎月要素'] = check_result
+    # if monthly_df is not None and len(monthly_df) != 0:
+    #     monthly_element_list = [e.strip() for e in monthly_elements.split(',') if e.strip()]
+    #     if monthly_element_list:  # 只有当列表不为空时才进行检查
+    #         checker = check(monthly_df, 'MS', monthly_element_list, [sta_ids], years[0], years[1])
+    #         check_result = checker.run()
+    #         result_dict.check_result['使用的天擎月要素'] = check_result
 
     if daily_df is not None and len(daily_df) != 0:
         daily_element_list = [e.strip() for e in daily_elements.split(',') if e.strip()]
@@ -177,86 +168,62 @@ def feature_stats_handler(data_json):
             result_dict.check_result['使用的天擎日要素'] = check_result
 
     # 6.结果生成
-    result_list = []  # 用于生成所有保存路径
     result_path = []
 
-    for ele in elements:
+    df_main = daily_df[daily_df['Station_Id_C'].isin(parts)]
+    df_sub = daily_df[daily_df['Station_Id_C'].isin(sub_parts)]
 
+    for ele in elements:
         if ele == 'TEM':
             result_dict.temperature = edict()
-            basic_tem_yearly, basic_tem_accum, report_path = key_tem_statistics(daily_df, monthly_df, data_dir)
-            result_dict.temperature['历年'] = basic_tem_yearly
-            result_dict.temperature['累年各月'] = basic_tem_accum
-
+            result = key_tem_statistics(df_main, df_sub)
+            result_dict['TEM'] = result
             try:
                 report_path = report_path.replace(cfg.INFO.IN_DATA_DIR, cfg.INFO.OUT_DATA_DIR)
                 result_path.append(report_path)
-                result_dict.temperature['report'] = report_path.replace(cfg.INFO.OUT_DATA_DIR, cfg.INFO.OUT_DATA_URL)
+                result_dict['TEM']['report'] = report_path.replace(cfg.INFO.OUT_DATA_DIR, cfg.INFO.OUT_DATA_URL)
             except:
-                result_dict.temperature['report'] = None
-
-            result_list.append(OrderedDict(zip(['历年气温统计', '累年各月气温统计'], [basic_tem_yearly, basic_tem_accum])))
+                result_dict['TEM']['report'] = None
 
         elif ele == 'WIND':
-            result_dict.wind_speed = edict()
-            # 风速
-            basic_win_yearly, basic_win_accum, report_path = key_wind_statistics(daily_df, monthly_df, data_dir)
-            result_dict.wind_speed['历年'] = basic_win_yearly
-            result_dict.wind_speed['累年各月'] = basic_win_accum
-            result_list.append(OrderedDict(zip(['历年风速统计', '累年各月风速统计'], [basic_win_yearly, basic_win_accum])))
-
-            # report
+            result = key_wind_statistics(df_main, df_sub)
+            result_dict['WIND'] = result
             try:
                 report_path = report_path.replace(cfg.INFO.IN_DATA_DIR, cfg.INFO.OUT_DATA_DIR)
                 result_path.append(report_path)
-                result_dict['report'] = report_path.replace(cfg.INFO.OUT_DATA_DIR, cfg.INFO.OUT_DATA_URL)
+                result_dict['WIND']['report'] = report_path.replace(cfg.INFO.OUT_DATA_DIR, cfg.INFO.OUT_DATA_URL)
             except:
-                result_dict['report'] = None
+                result_dict['WIND']['report'] = None
 
         elif ele == 'PRE':
-            result_dict.precipitation = edict()
-            basic_pre_yearly, basic_pre_accum, report_path = key_pre_statistics(daily_df, data_dir)
-            result_path.append(report_path)
-            result_dict.precipitation['历年'] = basic_pre_yearly
-            result_dict.precipitation['累年各月'] = basic_pre_accum
-
+            result = key_pre_statistics(df_main, df_sub)
+            result_dict['PRE'] = result
             try:
                 report_path = report_path.replace(cfg.INFO.IN_DATA_DIR, cfg.INFO.OUT_DATA_DIR)
-                result_dict.precipitation['report'] = report_path.replace(cfg.INFO.OUT_DATA_DIR, cfg.INFO.OUT_DATA_URL)
+                result_path.append(report_path)
+                result_dict['PRE']['report'] = report_path.replace(cfg.INFO.OUT_DATA_DIR, cfg.INFO.OUT_DATA_URL)
             except:
-                result_dict.precipitation['report'] = None
-
-            result_list.append(OrderedDict(zip(['历年降水统计', '累年各月降水统计'], [basic_pre_yearly, basic_pre_accum])))
+                result_dict['PRE']['report'] = None
 
         elif ele == 'SNOW':
-            result_dict.snow_depth = edict()
-            basic_snow_yearly, basic_snow_accum, report_path = key_snow_statistics(daily_df, data_dir)
-            result_path.append(report_path)
-            result_dict.snow_depth['历年'] = basic_snow_yearly
-            result_dict.snow_depth['累年各月'] = basic_snow_accum
-
+            result = key_snow_statistics(df_main, df_sub)
+            result_dict['SNOW'] = result
             try:
                 report_path = report_path.replace(cfg.INFO.IN_DATA_DIR, cfg.INFO.OUT_DATA_DIR)
-                result_dict.snow_depth['report'] = report_path.replace(cfg.INFO.OUT_DATA_DIR, cfg.INFO.OUT_DATA_URL)
+                result_path.append(report_path)
+                result_dict['SNOW']['report'] = report_path.replace(cfg.INFO.OUT_DATA_DIR, cfg.INFO.OUT_DATA_URL)
             except:
-                result_dict.snow_depth['report'] = None
-
-            result_list.append(OrderedDict(zip(['历年积雪深度统计', '累年各月积雪深度统计'], [basic_snow_yearly, basic_snow_accum])))
+                result_dict['SNOW']['report'] = None
 
         elif ele == 'FRS':
-            result_dict.frs_depth = edict()
-            basic_frs_yearly, basic_frs_accum, report_path = key_frs_statistics(daily_df, data_dir)
-            result_path.append(report_path)
-            result_dict.frs_depth['历年'] = basic_frs_yearly
-            result_dict.frs_depth['累年各月'] = basic_frs_accum
-
+            result = key_frs_statistics(df_main, df_sub)
+            result_dict['FRS'] = result
             try:
                 report_path = report_path.replace(cfg.INFO.IN_DATA_DIR, cfg.INFO.OUT_DATA_DIR)
-                result_dict.frs_depth['report'] = report_path.replace(cfg.INFO.OUT_DATA_DIR, cfg.INFO.OUT_DATA_URL)
+                result_path.append(report_path)
+                result_dict['FRS']['report'] = report_path.replace(cfg.INFO.OUT_DATA_DIR, cfg.INFO.OUT_DATA_URL)
             except:
-                result_dict.frs_depth['report'] = None
-
-            result_list.append(OrderedDict(zip(['历年冻土深度统计', '累年各月冻土深度统计'], [basic_frs_yearly, basic_frs_accum])))
+                result_dict['FRS']['report'] = None
 
     if len(result_path) == 0:
         result_dict['report'] = None
@@ -278,7 +245,7 @@ def feature_stats_handler(data_json):
             
     # 6.结果保存
     if cfg.INFO.SAVE_RESULT:
-        result_dict['csv'] = save_cmadaas_data(data_dir, mon_data=monthly_df, day_data=daily_df)
+        result_dict['csv'] = save_cmadaas_data(data_dir, day_data=daily_df)
 
     return result_dict
 
