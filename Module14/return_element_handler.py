@@ -243,8 +243,11 @@ class workerReturnPeriod:
         years_split = years.split(',')
         all_results.check_result = edict()
         if daily_df is not None and len(daily_df) != 0:
-            checker = check(daily_df, 'D', daily_elements.split(','), sta_ids.split(','), years_split[0], years_split[1])
+            daily_element_list = [e.strip() for e in daily_elements.split(',') if e.strip()]
+            sta_list = [s.strip() for s in sta_ids.split(',') if s.strip()]
+            checker = check(daily_df, 'D', daily_element_list, sta_list, years_split[0], years_split[1])
             all_results.check_result['使用的天擎日要素'] = checker.run()
+
         if cfg.INFO.SAVE_RESULT:
             all_results['csv'] = save_cmadaas_data(data_dir, day_data=daily_df)
 

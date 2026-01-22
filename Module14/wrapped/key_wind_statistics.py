@@ -1,284 +1,74 @@
 '''
 关键因子-风速
 '''
-import logging
-import numpy as np
 import pandas as pd
+from sklearn.linear_model import LinearRegression
 from Utils.config import cfg
 from Utils.get_local_data import get_local_data
 # from Report.code.Module02.wind import wind_report
 
-# wind_day    = daily_df
-# wind_month  =monthly_df
-def key_wind_statistics(wind_day, wind_month, data_dir):
-    '''
-    温度要素，历年和累年各月统计，
-    使用天擎上的年数据和月数据，要素名称为天擎上默认的名称
-    年值要素：['Station_Id_C', 'Station_Name', 'Year', 'WIN_S_Max', 'WIN_S_Inst_Max']
-    月值要素：['Station_Id_C', 'Station_Name', 'Year', 'WIN_S_Max', 'WIN_S_Inst_Max']
-    return: dataframe
-    '''
-    try:
-        if 'Station_Name' in wind_day.columns:
-            yearly_records = []
-            for station, df in wind_day.groupby('Station_Name'):
-                max_dates = df.dropna(subset=['WIN_S_Max']).groupby(lambda x: x.year)['WIN_S_Max'].idxmax()
-                max_info = df.loc[max_dates[max_dates.notna()], ['WIN_S_Max']]
-                max_info['最大风速出现日期'] = max_info.index.strftime('%m月%d日')
-                max_info.index = max_info.index.year
+def key_wind_statistics(df_main, df_sub):
+    result = {}
+    concat = pd.concat([df_main, df_sub], axis=0)
+    concat['Mon'] = concat.index.month
+    concat['Year'] = concat.index.year
+    yearly_max = concat.dropna(subset=['WIN_S_Max']).groupby(['Station_Id_C', 'Year'])['WIN_S_Max'].max().reset_index()
+    yearly_max.columns = ['站号', '年份', '最大风速(m/s)']
+    yearly_max = yearly_max.pivot(index='年份', columns='站号', values='最大风速(m/s)')
+    yearly_max = yearly_max.reindex(columns=sorted(yearly_max.columns)).reset_index(drop=False)
+    
+    yearly_inst = concat.dropna(subset=['WIN_S_Inst_Max']).groupby(['Station_Id_C', 'Year'])['WIN_S_Inst_Max'].max().reset_index()
+    yearly_inst.columns = ['站号', '年份', '极大风速(m/s)']
+    yearly_inst = yearly_inst.pivot(index='年份', columns='站号', values='极大风速(m/s)')
+    yearly_inst = yearly_inst.reindex(columns=sorted(yearly_inst.columns)).reset_index(drop=False)
 
-                inst_dates = df.dropna(subset=['WIN_S_Inst_Max']).groupby(lambda x: x.year)['WIN_S_Inst_Max'].idxmax()
-                inst_info = df.loc[inst_dates[inst_dates.notna()], ['WIN_S_Inst_Max']]
-                inst_info['极大风速出现日期'] = inst_info.index.strftime('%m月%d日')
-                inst_info.index = inst_info.index.year
+    monthly_avg_max = concat.dropna(subset=['WIN_S_Max']).groupby(['Station_Id_C', 'Mon'])['WIN_S_Max'].mean().round(1).reset_index()
+    monthly_avg_max = monthly_avg_max.pivot(index='Station_Id_C', columns='Mon', values='WIN_S_Max')
+    monthly_avg_max = monthly_avg_max.reindex(columns=sorted(monthly_avg_max.columns)).reset_index()
+    monthly_avg_max.columns = ['站号'] + [str(c)+'月' for c in monthly_avg_max.columns[1:]]
 
-                yearly_df = pd.concat([max_info, inst_info], axis=1)
-                yearly_df.insert(loc=0, column='年份', value=yearly_df.index)
-                yearly_df.reset_index(drop=True, inplace=True)
-                yearly_df.insert(loc=0, column='站名', value=station)
-                yearly_df.columns = ['站名', '年份', '最大风速(m/s)', '最大风速出现日期', '极大风速(m/s)', '极大风速出现日期']
-                yearly_records.extend(yearly_df.to_dict(orient='records'))
-
-            basic_wind_yearly = yearly_records if len(yearly_records) != 0 else None
-
-        else:
-            max_wind_dates = wind_day.dropna(subset=['WIN_S_Max']).groupby(lambda x: x.year)['WIN_S_Max'].idxmax()
-            max_wind_info = wind_day.loc[max_wind_dates[max_wind_dates.notna()], ['WIN_S_Max']]
-            max_wind_info['最大风速出现日期'] = max_wind_info.index.strftime('%m月%d日')
-            max_wind_info.index = max_wind_info.index.year
-
-            inst_wind_dates = wind_day.dropna(subset=['WIN_S_Inst_Max']).groupby(lambda x: x.year)['WIN_S_Inst_Max'].idxmax()
-            inst_wind_info = wind_day.loc[inst_wind_dates[inst_wind_dates.notna()], ['WIN_S_Inst_Max']]
-            inst_wind_info['极大风速出现日期'] = inst_wind_info.index.strftime('%m月%d日')
-            inst_wind_info.index = inst_wind_info.index.year
-
-            basic_wind_yearly = pd.concat([max_wind_info, inst_wind_info], axis=1)
-            basic_wind_yearly.insert(loc=0, column='年份', value=basic_wind_yearly.index)
-            basic_wind_yearly.reset_index(drop=True, inplace=True)
-            basic_wind_yearly.columns = ['年份', '最大风速(m/s)', '最大风速出现日期', '极大风速(m/s)', '极大风速出现日期']
-            basic_wind_yearly = basic_wind_yearly.to_dict(orient='records')
-
-    except Exception as e:
-        logging.exception(e)
-        basic_wind_yearly = None
-
-    finally:
-        try:
-            if 'Station_Name' in wind_month.columns:
-                accum_records = []
-
-                def sample(x):
-                    x = str(x)
-                    if 'T' in x:
-                        x = int(x[:-1])
-                    elif 'N' in x:
-                        x = int(x[:-1])
-                    else:
-                        x = 1
-                    return x
-
-                for station, dfm in wind_month.groupby('Station_Name'):
-                    WIN_S_Max = dfm[['WIN_S_Max', 'WIN_S_Max_ODay_C', 'Year', 'Mon']]
-                    WIN_S_Inst_Max = dfm[['WIN_S_Inst_Max', 'WIN_S_INST_Max_ODay_C', 'Year', 'Mon']]
-
-                    max_wind_accum = []
-                    inst_wind_accum = []
-
-                    for i in range(1, 13):
-                        month_i_max = WIN_S_Max[WIN_S_Max.index.month == i]
-                        month_i_max = month_i_max[month_i_max['WIN_S_Max'] == month_i_max['WIN_S_Max'].max()]
-
-                        if len(month_i_max) > 1:
-                            wind_data = month_i_max.iloc[0, 0]
-                            occur_day = str(month_i_max['WIN_S_Max_ODay_C'].apply(sample).sum()) + 'T'
-                            occur_year = str(len(month_i_max)) + 'N'
-                            occur_month = month_i_max.iloc[0, 3]
-                            array = np.array([wind_data, occur_day, occur_year, occur_month]).reshape(1, -1)
-                            max_df = pd.DataFrame(array, columns=['WIN_S_Max', 'WIN_S_Max_ODay_C', 'Year', 'Mon'], index=[month_i_max.index[0]])
-                        else:
-                            max_df = month_i_max[['WIN_S_Max', 'WIN_S_Max_ODay_C', 'Year', 'Mon']]
-
-                        max_wind_accum.append(max_df)
-
-                        month_i_max = WIN_S_Inst_Max[WIN_S_Inst_Max.index.month == i]
-                        month_i_max = month_i_max[month_i_max['WIN_S_Inst_Max'] == month_i_max['WIN_S_Inst_Max'].max()]
-
-                        if len(month_i_max) > 1:
-                            wind_data = month_i_max.iloc[0, 0]
-                            occur_day = str(month_i_max['WIN_S_INST_Max_ODay_C'].apply(sample).sum()) + 'T'
-                            occur_year = str(len(month_i_max)) + 'N'
-                            occur_month = month_i_max.iloc[0, 3]
-                            array = np.array([wind_data, occur_day, occur_year, occur_month]).reshape(1, -1)
-                            inst_df = pd.DataFrame(array, columns=['WIN_S_Inst_Max', 'WIN_S_INST_Max_ODay_C', 'Year', 'Mon'], index=[month_i_max.index[0]])
-                        else:
-                            inst_df = month_i_max[['WIN_S_Inst_Max', 'WIN_S_INST_Max_ODay_C', 'Year', 'Mon']]
-
-                        inst_wind_accum.append(inst_df)
-
-                    max_wind_accum = pd.concat(max_wind_accum, axis=0, ignore_index=True)
-                    max_wind_accum['WIN_S_Max'] = max_wind_accum['WIN_S_Max'].astype(float)
-                    max_row = max_wind_accum[max_wind_accum['WIN_S_Max'] == max_wind_accum['WIN_S_Max'].max()].reset_index(drop=True)
-
-                    if len(max_row) == 1:
-                        wind_v = max_row.loc[0, 'WIN_S_Max']
-                        date_v = max_row['Mon'].map(str) + '-' + max_row['WIN_S_Max_ODay_C'].map(str)
-                        year_v = max_row.loc[0, 'Year']
-                        values_list_max = [wind_v, date_v.values[0], year_v]
-                    else:
-                        wind_v = max_row.loc[0, 'WIN_S_Max']
-                        date_v = str(len(max_row)) + 'T'
-                        year_v = str(max_row['Year'].apply(sample).sum()) + 'N'
-                        values_list_max = [wind_v, date_v, year_v]
-
-                    max_wind_accum.drop('Mon', axis=1, inplace=True)
-                    max_wind_accum = max_wind_accum.T
-                    max_wind_accum.index = ['最大风速(m/s)', '最大风速出现日期', '最大风速出现年份']
-                    max_wind_accum['全年'] = values_list_max
-
-                    inst_wind_accum = pd.concat(inst_wind_accum, axis=0, ignore_index=True)
-                    inst_wind_accum['WIN_S_Inst_Max'] = inst_wind_accum['WIN_S_Inst_Max'].astype(float)
-                    inst_row = inst_wind_accum[inst_wind_accum['WIN_S_Inst_Max'] == inst_wind_accum['WIN_S_Inst_Max'].max()].reset_index(drop=True)
-
-                    if len(inst_row) == 1:
-                        wind_v = inst_row.loc[0, 'WIN_S_Inst_Max']
-                        date_v = inst_row['Mon'].map(str) + '-' + inst_row['WIN_S_INST_Max_ODay_C'].map(str)
-                        year_v = inst_row.loc[0, 'Year']
-                        values_list_max = [wind_v, date_v.values[0], year_v]
-                    else:
-                        wind_v = inst_row.loc[0, 'WIN_S_Inst_Max']
-                        date_v = str(len(inst_row)) + 'T'
-                        year_v = str(inst_row['Year'].apply(sample).sum()) + 'N'
-                        values_list_max = [wind_v, date_v, year_v]
-
-                    inst_wind_accum.drop('Mon', axis=1, inplace=True)
-                    inst_wind_accum = inst_wind_accum.T
-                    inst_wind_accum.index = ['极大风速(m/s)', '极大风速出现日期', '极大风速出现年份']
-                    inst_wind_accum['全年'] = values_list_max
-
-                    basic_wind_accum_station = pd.concat([max_wind_accum, inst_wind_accum], axis=0)
-
-                    month_list = [str(i) + '月' for i in range(1, 13)]
-                    month_list.append('年')
-                    basic_wind_accum_station.columns = month_list
-                    basic_wind_accum_station.reset_index(inplace=True)
-                    basic_wind_accum_station.rename(columns={'index': '要素'}, inplace=True)
-                    basic_wind_accum_station.insert(loc=0, column='站名', value=station)
-
-                    accum_records.extend(basic_wind_accum_station.to_dict(orient='records'))
-
-                basic_wind_accum = accum_records if len(accum_records) != 0 else None
-
+    monthly_avg_inst = concat.dropna(subset=['WIN_S_Inst_Max']).groupby(['Station_Id_C', 'Mon'])['WIN_S_Inst_Max'].mean().round(1).reset_index()
+    monthly_avg_inst = monthly_avg_inst.pivot(index='Station_Id_C', columns='Mon', values='WIN_S_Inst_Max')
+    monthly_avg_inst = monthly_avg_inst.reindex(columns=sorted(monthly_avg_inst.columns)).reset_index()
+    monthly_avg_inst.columns = ['站号'] + [str(c)+'月' for c in monthly_avg_inst.columns[1:]]
+    
+    def linreg_params(df):
+        res = []
+        years = df['年份'].values.reshape(-1, 1)
+        for col in df.columns:
+            if col == '年份':
+                continue
+            y = df[col].values
+            m = ~pd.isna(y)
+            x = years[m]
+            y = y[m]
+            if len(x) >= 2:
+                model = LinearRegression()
+                model.fit(x, y)
+                slope = float(model.coef_[0])
+                intercept = float(model.intercept_)
+                r2 = float(model.score(x, y))
             else:
-                WIN_S_Max = wind_month[['WIN_S_Max', 'WIN_S_Max_ODay_C', 'Year', 'Mon']]
-                WIN_S_Inst_Max = wind_month[['WIN_S_Inst_Max', 'WIN_S_INST_Max_ODay_C', 'Year', 'Mon']]
+                slope = float('nan')
+                intercept = float('nan')
+                r2 = float('nan')
+            res.append([col, slope, intercept, r2])
+        return pd.DataFrame(res, columns=['站号', 'weight', 'bias', 'R_square'])
+    yearly_max_lr = linreg_params(yearly_max).round(2)
+    yearly_inst_lr = linreg_params(yearly_inst).round(2)
 
-                max_wind_accum = []
-                inst_wind_accum = []
-
-                def sample(x):
-                    x = str(x)
-                    if 'T' in x:
-                        x = int(x[:-1])
-                    elif 'N' in x:
-                        x = int(x[:-1])
-                    else:
-                        x = 1
-                    return x
-
-                for i in range(1, 13):
-                    month_i_max = WIN_S_Max[WIN_S_Max.index.month == i]
-                    month_i_max = month_i_max[month_i_max['WIN_S_Max'] == month_i_max['WIN_S_Max'].max()]
-
-                    if len(month_i_max) > 1:
-                        wind_data = month_i_max.iloc[0, 0]
-                        occur_year = str(len(month_i_max)) + 'N'
-                        occur_month = month_i_max.iloc[0, 3]
-                        array = np.array([wind_data, occur_year, occur_month]).reshape(1, -1)
-                        max_df = pd.DataFrame(array, columns=['WIN_S_Max', 'Year', 'Mon'], index=[month_i_max.index[0]])
-                    else:
-                        max_df = month_i_max[['WIN_S_Max', 'Year', 'Mon']]
-
-                    max_wind_accum.append(max_df)
-
-                    month_i_max = WIN_S_Inst_Max[WIN_S_Inst_Max.index.month == i]
-                    month_i_max = month_i_max[month_i_max['WIN_S_Inst_Max'] == month_i_max['WIN_S_Inst_Max'].max()]
-
-                    if len(month_i_max) > 1:
-                        wind_data = month_i_max.iloc[0, 0]
-                        occur_year = str(len(month_i_max)) + 'N'
-                        occur_month = month_i_max.iloc[0, 3]
-                        array = np.array([wind_data, occur_year, occur_month]).reshape(1, -1)
-                        inst_df = pd.DataFrame(array, columns=['WIN_S_Inst_Max', 'Year', 'Mon'], index=[month_i_max.index[0]])
-                    else:
-                        inst_df = month_i_max[['WIN_S_Inst_Max', 'Year', 'Mon']]
-
-                    inst_wind_accum.append(inst_df)
-
-                max_wind_accum = pd.concat(max_wind_accum, axis=0, ignore_index=True)
-                max_wind_accum['WIN_S_Max'] = max_wind_accum['WIN_S_Max'].astype(float)
-                max_row = max_wind_accum[max_wind_accum['WIN_S_Max'] == max_wind_accum['WIN_S_Max'].max()].reset_index(drop=True)
-
-                if len(max_row) == 1:
-                    wind_v = max_row.loc[0, 'WIN_S_Max']
-                    date_v = max_row['Mon'].map(str) + '-' + max_row['WIN_S_Max_ODay_C'].map(str)
-                    year_v = max_row.loc[0, 'Year']
-                    values_list_max = [wind_v, date_v.values[0], year_v]
-                else:
-                    wind_v = max_row.loc[0, 'WIN_S_Max']
-                    date_v = str(len(max_row)) + 'T'
-                    year_v = str(max_row['Year'].apply(sample).sum()) + 'N'
-                    values_list_max = [wind_v, date_v, year_v]
-
-                max_wind_accum.drop('Mon', axis=1, inplace=True)
-                max_wind_accum = max_wind_accum.T
-                max_wind_accum.index = ['最大风速(m/s)', '最大风速出现日期', '最大风速出现年份']
-                max_wind_accum['全年'] = values_list_max
-
-                inst_wind_accum = pd.concat(inst_wind_accum, axis=0, ignore_index=True)
-                inst_wind_accum['WIN_S_Inst_Max'] = inst_wind_accum['WIN_S_Inst_Max'].astype(float)
-                inst_row = inst_wind_accum[inst_wind_accum['WIN_S_Inst_Max'] == inst_wind_accum['WIN_S_Inst_Max'].max()].reset_index(drop=True)
-
-                if len(inst_row) == 1:
-                    wind_v = inst_row.loc[0, 'WIN_S_Inst_Max']
-                    date_v = inst_row['Mon'].map(str) + '-' + inst_row['WIN_S_INST_Max_ODay_C'].map(str)
-                    year_v = inst_row.loc[0, 'Year']
-                    values_list_max = [wind_v, date_v.values[0], year_v]
-                else:
-                    wind_v = inst_row.loc[0, 'WIN_S_Inst_Max']
-                    date_v = str(len(inst_row)) + 'T'
-                    year_v = str(inst_row['Year'].apply(sample).sum()) + 'N'
-                    values_list_max = [wind_v, date_v, year_v]
-
-                inst_wind_accum.drop('Mon', axis=1, inplace=True)
-                inst_wind_accum = inst_wind_accum.T
-                inst_wind_accum.index = ['极大风速(m/s)', '极大风速出现日期', '极大风速出现年份']
-                inst_wind_accum['全年'] = values_list_max
-
-                basic_wind_accum = pd.concat([max_wind_accum, inst_wind_accum], axis=0)
-                month_list = [str(i) + '月' for i in range(1, 13)]
-                month_list.append('年')
-                basic_wind_accum.columns = month_list
-                basic_wind_accum.reset_index(inplace=True)
-                basic_wind_accum.rename(columns={'index': '要素'}, inplace=True)
-
-                tmp = basic_wind_accum.dropna(axis=1, how='all')
-                if len(tmp.columns) <= 1:
-                    basic_wind_accum = None
-                else:
-                    basic_wind_accum = basic_wind_accum.to_dict(orient='records')
-
-        except Exception as e:
-            logging.exception(e)
-            basic_wind_accum = None
-
-        finally:
-            report_path = None
-            return basic_wind_yearly, basic_wind_accum, report_path
+    result['历年最大风速'] = yearly_max
+    result['历年极大风速'] = yearly_inst
+    result['累年各月平均最大风速'] = monthly_avg_max
+    result['累年各月平均极大风速'] = monthly_avg_inst
+    result['最大风速拟合'] = yearly_max_lr
+    result['极大风速拟合'] = yearly_inst_lr
+    
+    return result
 
 
 if __name__ == '__main__':
-    daily_df = pd.read_csv(cfg.FILES.QH_DATA_DAY)
-    monthly_df = pd.read_csv(cfg.FILES.QH_DATA_MONTH, low_memory=False)
+    daily_df = pd.read_csv(r'C:/Users/mjynj/Desktop/qh_day.csv')
     sta_ids = '52866,52713'
     years = '2000,2020'
 
@@ -286,10 +76,6 @@ if __name__ == '__main__':
     day_eles = ('Station_Name,Station_Id_C,Lat,Lon,Datetime,Year,Mon,Day,' + daily_elements[:-1]).split(',')
     post_daily_df = get_local_data(daily_df, sta_ids, day_eles, years, 'Day')
     
-    monthly_elements = 'WIN_S_Max,WIN_S_Inst_Max,WIN_S_Max_ODay_C,WIN_S_INST_Max_ODay_C,'
-    month_eles = ('Station_Name,Station_Id_C,Lat,Lon,Datetime,Year,Mon,' + monthly_elements[:-1]).split(',')
-    post_monthly_df = get_local_data(monthly_df, sta_ids, month_eles, years, 'Month')
-    
-    wind_day = post_daily_df.copy()
-    wind_month = post_monthly_df.copy()
-    basic_wind_yearly, basic_wind_accum, report_path = key_wind_statistics(post_daily_df, post_monthly_df)
+    df_main = post_daily_df[post_daily_df['Station_Id_C'] == '52866']
+    df_sub = post_daily_df[post_daily_df['Station_Id_C'] == '52713']
+    result = key_wind_statistics(df_main, df_sub)
