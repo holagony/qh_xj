@@ -116,9 +116,9 @@ def thund_days_report(table1,table2,table3,month_data,data_dir,main_sta_ids):
     valid_preperatures = table1u[station_name+'站'][mask]
     slope, intercept = np.polyfit(valid_years, valid_preperatures, 1)   
     if slope> 0:
-        dic['average_pre_slope']='上升'
+        dic['average_pre_slope']='上升（每10年增加'+f"{slope*10:.2f}"+'天）'
     else:
-        dic['average_pre_slope']='下降'
+        dic['average_pre_slope']='下降（每10年减少'+f"{np.abs(slope)*10:.2f}"+'天）'
 
     average_pre_picture_hournum=plot_picture(table1u, '年份',station_name+'站','雷暴日数（d）','d','历年平均雷暴日数变化.png',10,10,data_dir)
 
