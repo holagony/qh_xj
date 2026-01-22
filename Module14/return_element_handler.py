@@ -108,151 +108,142 @@ class workerReturnPeriod:
                 raise Exception('天擎数据获取失败')
 
         # 5.生成结果
-        try:
-            df_sequence = daily_df[daily_df['Station_Id_C'] == main_station]
-            all_results = edict()
-            for ele in elements:
-                if ele == 'WIND':
-                    wind_s = calc_return_period_wind(df_sequence, return_years, fitting_method, data_dir, main_station)
-                    r = wind_s.run()
-                    r['uuid'] = uuid4
+        df_sequence = daily_df[daily_df['Station_Id_C'] == main_station]
+        all_results = edict()
+        all_results['uuid'] = uuid4
+        for ele in elements:
+            if ele == 'WIND':
+                wind_s = calc_return_period_wind(df_sequence, return_years, fitting_method, data_dir, main_station)
+                r = wind_s.run()
+                try:
+                    if len(fitting_method) == 2:
+                        report_path = re_wind_report(r, daily_df, data_dir)
+                        report_path = report_path.replace(cfg.INFO.IN_DATA_DIR, cfg.INFO.OUT_DATA_DIR)
+                        r['report'] = report_path.replace(cfg.INFO.OUT_DATA_DIR, cfg.INFO.OUT_DATA_URL)
+                    else:
+                        report_path = re_wind_report_pg(r, daily_df, fitting_method[0], data_dir)
+                        report_path = report_path.replace(cfg.INFO.IN_DATA_DIR, cfg.INFO.OUT_DATA_DIR)
+                        r['report'] = report_path.replace(cfg.INFO.OUT_DATA_DIR, cfg.INFO.OUT_DATA_URL)
+                except Exception as e:
+                    r['report'] = None
+                if 'img_save_path' in r:
                     try:
-                        if len(fitting_method) == 2:
-                            report_path = re_wind_report(r, daily_df, data_dir)
-                            report_path = report_path.replace(cfg.INFO.IN_DATA_DIR, cfg.INFO.OUT_DATA_DIR)
-                            r['report'] = report_path.replace(cfg.INFO.OUT_DATA_DIR, cfg.INFO.OUT_DATA_URL)
-                        else:
-                            report_path = re_wind_report_pg(r, daily_df, fitting_method[0], data_dir)
-                            report_path = report_path.replace(cfg.INFO.IN_DATA_DIR, cfg.INFO.OUT_DATA_DIR)
-                            r['report'] = report_path.replace(cfg.INFO.OUT_DATA_DIR, cfg.INFO.OUT_DATA_URL)
-                    except Exception as e:
-                        r['report'] = None
-                    if 'img_save_path' in r:
-                        try:
-                            for name, path in r['img_save_path'].items():
-                                path = path.replace(cfg.INFO.IN_DATA_DIR, cfg.INFO.OUT_DATA_DIR)
-                                r['img_save_path'][name] = path.replace(cfg.INFO.OUT_DATA_DIR, cfg.INFO.OUT_DATA_URL)
-                        except:
-                            pass
-                    all_results['WIND'] = r
+                        for name, path in r['img_save_path'].items():
+                            path = path.replace(cfg.INFO.IN_DATA_DIR, cfg.INFO.OUT_DATA_DIR)
+                            r['img_save_path'][name] = path.replace(cfg.INFO.OUT_DATA_DIR, cfg.INFO.OUT_DATA_URL)
+                    except:
+                        pass
+                all_results['WIND'] = r
 
-                elif ele == 'TEM':
-                    tem_s = calc_return_period_tem(df_sequence, return_years, fitting_method, data_dir)
-                    r = tem_s.run()
-                    r['uuid'] = uuid4
+            elif ele == 'TEM':
+                tem_s = calc_return_period_tem(df_sequence, return_years, fitting_method, data_dir)
+                r = tem_s.run()
+                try:
+                    if len(fitting_method) == 2:
+                        report_path = re_tem_report(r, daily_df, data_dir)
+                        report_path = report_path.replace(cfg.INFO.IN_DATA_DIR, cfg.INFO.OUT_DATA_DIR)
+                        r['report'] = report_path.replace(cfg.INFO.OUT_DATA_DIR, cfg.INFO.OUT_DATA_URL)
+                    else:
+                        report_path = re_tem_report_pg(r, daily_df, fitting_method[0], data_dir)
+                        report_path = report_path.replace(cfg.INFO.IN_DATA_DIR, cfg.INFO.OUT_DATA_DIR)
+                        r['report'] = report_path.replace(cfg.INFO.OUT_DATA_DIR, cfg.INFO.OUT_DATA_URL)
+                except Exception as e:
+                    r['report'] = None
+                if 'img_save_path' in r:
                     try:
-                        if len(fitting_method) == 2:
-                            report_path = re_tem_report(r, daily_df, data_dir)
-                            report_path = report_path.replace(cfg.INFO.IN_DATA_DIR, cfg.INFO.OUT_DATA_DIR)
-                            r['report'] = report_path.replace(cfg.INFO.OUT_DATA_DIR, cfg.INFO.OUT_DATA_URL)
-                        else:
-                            report_path = re_tem_report_pg(r, daily_df, fitting_method[0], data_dir)
-                            report_path = report_path.replace(cfg.INFO.IN_DATA_DIR, cfg.INFO.OUT_DATA_DIR)
-                            r['report'] = report_path.replace(cfg.INFO.OUT_DATA_DIR, cfg.INFO.OUT_DATA_URL)
-                    except Exception as e:
-                        r['report'] = None
-                    if 'img_save_path' in r:
-                        try:
-                            for name, path in r['img_save_path'].items():
-                                path = path.replace(cfg.INFO.IN_DATA_DIR, cfg.INFO.OUT_DATA_DIR)
-                                r['img_save_path'][name] = path.replace(cfg.INFO.OUT_DATA_DIR, cfg.INFO.OUT_DATA_URL)
-                        except:
-                            pass
-                    all_results['WIND'] = r
+                        for name, path in r['img_save_path'].items():
+                            path = path.replace(cfg.INFO.IN_DATA_DIR, cfg.INFO.OUT_DATA_DIR)
+                            r['img_save_path'][name] = path.replace(cfg.INFO.OUT_DATA_DIR, cfg.INFO.OUT_DATA_URL)
+                    except:
+                        pass
+                all_results['TEM'] = r
 
-                elif ele == 'PRE':
-                    pre_calc = calc_return_period_pre(df_sequence=df_sequence,
-                                                      return_years=return_years,
-                                                      fitting_method=fitting_method,
-                                                      img_path=data_dir)
-                    r = pre_calc.run()
-                    r['uuid'] = uuid4
+            elif ele == 'PRE':
+                pre_calc = calc_return_period_pre(df_sequence=df_sequence,
+                                                    return_years=return_years,
+                                                    fitting_method=fitting_method,
+                                                    img_path=data_dir)
+                r = pre_calc.run()
+                try:
+                    if len(fitting_method) == 2:
+                        report_path = re_snow_report(r, daily_df, data_dir)
+                        report_path = report_path.replace(cfg.INFO.IN_DATA_DIR, cfg.INFO.OUT_DATA_DIR)
+                        r['report'] = report_path.replace(cfg.INFO.OUT_DATA_DIR, cfg.INFO.OUT_DATA_URL)
+                    else:
+                        report_path = re_snow_report_pg(r, daily_df, fitting_method[0], data_dir)
+                        report_path = report_path.replace(cfg.INFO.IN_DATA_DIR, cfg.INFO.OUT_DATA_DIR)
+                        r['report'] = report_path.replace(cfg.INFO.OUT_DATA_DIR, cfg.INFO.OUT_DATA_URL)
+                except Exception as e:
+                    r['report'] = None
+                if 'img_save_path' in r:
                     try:
-                        if len(fitting_method) == 2:
-                            report_path = re_snow_report(r, daily_df, data_dir)
-                            report_path = report_path.replace(cfg.INFO.IN_DATA_DIR, cfg.INFO.OUT_DATA_DIR)
-                            r['report'] = report_path.replace(cfg.INFO.OUT_DATA_DIR, cfg.INFO.OUT_DATA_URL)
-                        else:
-                            report_path = re_snow_report_pg(r, daily_df, fitting_method[0], data_dir)
-                            report_path = report_path.replace(cfg.INFO.IN_DATA_DIR, cfg.INFO.OUT_DATA_DIR)
-                            r['report'] = report_path.replace(cfg.INFO.OUT_DATA_DIR, cfg.INFO.OUT_DATA_URL)
-                    except Exception as e:
-                        r['report'] = None
-                    if 'img_save_path' in r:
-                        try:
-                            for name, path in r['img_save_path'].items():
-                                path = path.replace(cfg.INFO.IN_DATA_DIR, cfg.INFO.OUT_DATA_DIR)
-                                r['img_save_path'][name] = path.replace(cfg.INFO.OUT_DATA_DIR, cfg.INFO.OUT_DATA_URL)
-                        except:
-                            pass
-                    all_results['PRE'] = r
-                
-                elif ele == 'SNOW':
-                    snow_calc = calc_return_period_snow(df_sequence=df_sequence,
-                                                        return_years=return_years,
-                                                        fitting_method=fitting_method,
-                                                        img_path=data_dir)
-                    r = snow_calc.run()
-                    r['uuid'] = uuid4
+                        for name, path in r['img_save_path'].items():
+                            path = path.replace(cfg.INFO.IN_DATA_DIR, cfg.INFO.OUT_DATA_DIR)
+                            r['img_save_path'][name] = path.replace(cfg.INFO.OUT_DATA_DIR, cfg.INFO.OUT_DATA_URL)
+                    except:
+                        pass
+                all_results['PRE'] = r
+            
+            elif ele == 'SNOW':
+                snow_calc = calc_return_period_snow(df_sequence=df_sequence,
+                                                    return_years=return_years,
+                                                    fitting_method=fitting_method,
+                                                    img_path=data_dir)
+                r = snow_calc.run()
+                try:
+                    if len(fitting_method) == 2:
+                        report_path = re_snow_report(r, daily_df, data_dir)
+                        report_path = report_path.replace(cfg.INFO.IN_DATA_DIR, cfg.INFO.OUT_DATA_DIR)
+                        r['report'] = report_path.replace(cfg.INFO.OUT_DATA_DIR, cfg.INFO.OUT_DATA_URL)
+                    else:
+                        report_path = re_snow_report_pg(r, daily_df, fitting_method[0], data_dir)
+                        report_path = report_path.replace(cfg.INFO.IN_DATA_DIR, cfg.INFO.OUT_DATA_DIR)
+                        r['report'] = report_path.replace(cfg.INFO.OUT_DATA_DIR, cfg.INFO.OUT_DATA_URL)
+                except Exception as e:
+                    r['report'] = None
+                if 'img_save_path' in r:
                     try:
-                        if len(fitting_method) == 2:
-                            report_path = re_snow_report(r, daily_df, data_dir)
-                            report_path = report_path.replace(cfg.INFO.IN_DATA_DIR, cfg.INFO.OUT_DATA_DIR)
-                            r['report'] = report_path.replace(cfg.INFO.OUT_DATA_DIR, cfg.INFO.OUT_DATA_URL)
-                        else:
-                            report_path = re_snow_report_pg(r, daily_df, fitting_method[0], data_dir)
-                            report_path = report_path.replace(cfg.INFO.IN_DATA_DIR, cfg.INFO.OUT_DATA_DIR)
-                            r['report'] = report_path.replace(cfg.INFO.OUT_DATA_DIR, cfg.INFO.OUT_DATA_URL)
-                    except Exception as e:
-                        r['report'] = None
-                    if 'img_save_path' in r:
-                        try:
-                            for name, path in r['img_save_path'].items():
-                                path = path.replace(cfg.INFO.IN_DATA_DIR, cfg.INFO.OUT_DATA_DIR)
-                                r['img_save_path'][name] = path.replace(cfg.INFO.OUT_DATA_DIR, cfg.INFO.OUT_DATA_URL)
-                        except:
-                            pass
-                    all_results['SNOW'] = r
-                
-                elif ele == 'FRS':
-                    frs_calc = calc_return_period_frs(df_sequence=df_sequence,
-                                                      return_years=return_years,
-                                                      fitting_method=fitting_method,
-                                                      img_path=data_dir)
-                    r = frs_calc.run()
-                    r['uuid'] = uuid4
+                        for name, path in r['img_save_path'].items():
+                            path = path.replace(cfg.INFO.IN_DATA_DIR, cfg.INFO.OUT_DATA_DIR)
+                            r['img_save_path'][name] = path.replace(cfg.INFO.OUT_DATA_DIR, cfg.INFO.OUT_DATA_URL)
+                    except:
+                        pass
+                all_results['SNOW'] = r
+            
+            elif ele == 'FRS':
+                frs_calc = calc_return_period_frs(df_sequence=df_sequence,
+                                                    return_years=return_years,
+                                                    fitting_method=fitting_method,
+                                                    img_path=data_dir)
+                r = frs_calc.run()
+                try:
+                    if len(fitting_method) == 2:
+                        report_path = re_frs_report(r, daily_df, data_dir)
+                        report_path = report_path.replace(cfg.INFO.IN_DATA_DIR, cfg.INFO.OUT_DATA_DIR)
+                        r['report'] = report_path.replace(cfg.INFO.OUT_DATA_DIR, cfg.INFO.OUT_DATA_URL)
+                    else:
+                        report_path = re_frs_report_pg(r, daily_df, fitting_method[0], data_dir)
+                        report_path = report_path.replace(cfg.INFO.IN_DATA_DIR, cfg.INFO.OUT_DATA_DIR)
+                        r['report'] = report_path.replace(cfg.INFO.OUT_DATA_DIR, cfg.INFO.OUT_DATA_URL)
+                        
+                except Exception as e:
+                    r['report'] = None
+                if 'img_save_path' in r:
                     try:
-                        if len(fitting_method) == 2:
-                            report_path = re_frs_report(r, daily_df, data_dir)
-                            report_path = report_path.replace(cfg.INFO.IN_DATA_DIR, cfg.INFO.OUT_DATA_DIR)
-                            r['report'] = report_path.replace(cfg.INFO.OUT_DATA_DIR, cfg.INFO.OUT_DATA_URL)
-                        else:
-                            report_path = re_frs_report_pg(r, daily_df, fitting_method[0], data_dir)
-                            report_path = report_path.replace(cfg.INFO.IN_DATA_DIR, cfg.INFO.OUT_DATA_DIR)
-                            r['report'] = report_path.replace(cfg.INFO.OUT_DATA_DIR, cfg.INFO.OUT_DATA_URL)
-                            
-                    except Exception as e:
-                        r['report'] = None
-                    if 'img_save_path' in r:
-                        try:
-                            for name, path in r['img_save_path'].items():
-                                path = path.replace(cfg.INFO.IN_DATA_DIR, cfg.INFO.OUT_DATA_DIR)
-                                r['img_save_path'][name] = path.replace(cfg.INFO.OUT_DATA_DIR, cfg.INFO.OUT_DATA_URL)
-                        except:
-                            pass
-                    all_results['FRS'] = r
+                        for name, path in r['img_save_path'].items():
+                            path = path.replace(cfg.INFO.IN_DATA_DIR, cfg.INFO.OUT_DATA_DIR)
+                            r['img_save_path'][name] = path.replace(cfg.INFO.OUT_DATA_DIR, cfg.INFO.OUT_DATA_URL)
+                    except:
+                        pass
+                all_results['FRS'] = r
 
-            years_split = years.split(',')
-            all_results.check_result = edict()
-            if daily_df is not None and len(daily_df) != 0:
-                checker = check(daily_df, 'D', daily_elements.split(','), sta_ids.split(','), years_split[0], years_split[1])
-                all_results.check_result['使用的天擎日要素'] = checker.run()
-            if cfg.INFO.SAVE_RESULT:
-                all_results['csv'] = save_cmadaas_data(data_dir, day_data=daily_df)
-
-        except Exception as e:
-            logging.exception(e)
-            raise Exception('现有获取的数据不能满足重现期计算条件，无法得到计算结果')
+        years_split = years.split(',')
+        all_results.check_result = edict()
+        if daily_df is not None and len(daily_df) != 0:
+            checker = check(daily_df, 'D', daily_elements.split(','), sta_ids.split(','), years_split[0], years_split[1])
+            all_results.check_result['使用的天擎日要素'] = checker.run()
+        if cfg.INFO.SAVE_RESULT:
+            all_results['csv'] = save_cmadaas_data(data_dir, day_data=daily_df)
 
         return_data = simplejson.dumps({'code': code, 'msg': msg, 'data': all_results}, ensure_ascii=False, ignore_nan=True)
         callback(callback_url, result_id, return_data)
