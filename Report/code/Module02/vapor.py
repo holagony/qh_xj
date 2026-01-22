@@ -11,6 +11,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from docxtpl import DocxTemplate, InlineImage
 import os
+import numpy as np
 from Utils.config import cfg
 from docx.shared import Mm
 from docx import Document
@@ -19,9 +20,24 @@ from docx.enum.table import WD_TABLE_ALIGNMENT
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from Report.code.Function.plot_picture import plot_picture
 from Report.code.Function.plot_picture import plot_picture_2
+from scipy import stats
 
 plt.rcParams['font.sans-serif'] = ['SimHei'] 
 plt.rcParams['axes.unicode_minus'] = False 
+
+def pearson_r_sig(y, y_fit, alpha=0.05):
+    y = np.asarray(y, dtype=float)
+    y_fit = np.asarray(y_fit, dtype=float)
+    mask = ~(np.isnan(y) | np.isnan(y_fit))
+    y, y_fit = y[mask], y_fit[mask]
+    n = len(y)
+    if n < 3:
+        return np.nan, None, False
+    r = float(np.corrcoef(y, y_fit)[0, 1])
+    df = n - 2
+    t = r * np.sqrt(df / max(1e-12, 1 - r**2))
+    p = float(2 * stats.t.sf(np.abs(t), df))
+    return r, p, p < alpha
 
 def move_table_after(table, paragraph):
     tbl, p = table._tbl, paragraph._p
@@ -114,13 +130,40 @@ def vapor_report(basic_vapor_yearly,basic_vapor_accum,post_daily_df,data_dir):
     
     # 图像绘制
     # 平均水汽压
-    average_vapor_picture_hournum=plot_picture(basic_vapor_yearly, '年份','平均水汽压(hPa)','平均水汽压(hPa)','hPa','历年平均水汽压变化.png',0.5,0.5,data_dir)
+    mask = ~np.isnan(basic_vapor_yearly['平均水汽压(hPa)'])
+    valid_years = basic_vapor_yearly['年份'][mask]
+    valid_vals = basic_vapor_yearly['平均水汽压(hPa)'][mask]
+    slope, intercept = np.polyfit(valid_years, valid_vals, 1)
+    y_fit = slope * valid_years.astype(float) + intercept
+    r, p, passed = pearson_r_sig(valid_vals, y_fit, alpha=0.05)
+    dic['average_R'] = round(float(r), 3) if not np.isnan(r) else None
+    dic['average_sig_005'] = '通过' if passed else '未通过'
+    dic['average_trend_text'] = f"相关系数{dic['average_sig_005']}α=0.05显著性检验"
+    average_vapor_picture_hournum=plot_picture(basic_vapor_yearly, '年份','平均水汽压(hPa)','平均水汽压(hPa)','hPa','历年平均水汽压变化.png',0.5,0.5,data_dir,R=dic.get('average_R'))
 
     # 平均最大水汽压
-    max_vapor_picture_hournum=plot_picture(basic_vapor_yearly, '年份','最大水汽压(hPa)','平均最大水汽压(hPa)','hPa','历年平均最大水汽压变化.png',1,1,data_dir)
+    mask = ~np.isnan(basic_vapor_yearly['最大水汽压(hPa)'])
+    valid_years = basic_vapor_yearly['年份'][mask]
+    valid_vals = basic_vapor_yearly['最大水汽压(hPa)'][mask]
+    slope, intercept = np.polyfit(valid_years, valid_vals, 1)
+    y_fit = slope * valid_years.astype(float) + intercept
+    r, p, passed = pearson_r_sig(valid_vals, y_fit, alpha=0.05)
+    dic['max_R'] = round(float(r), 3) if not np.isnan(r) else None
+    dic['max_sig_005'] = '通过' if passed else '未通过'
+    dic['max_trend_text'] = f"相关系数{dic['max_sig_005']}α=0.05显著性检验"
+    max_vapor_picture_hournum=plot_picture(basic_vapor_yearly, '年份','最大水汽压(hPa)','平均最大水汽压(hPa)','hPa','历年平均最大水汽压变化.png',1,1,data_dir,R=dic.get('max_R'))
 
     # 平均最小水汽压
-    min_vapor_picture_hournum=plot_picture(basic_vapor_yearly, '年份','最小水汽压(hPa)','平均最小水汽压(hPa)','hPa','历年最小平均水汽压变化.png',0.5,0.5,data_dir)
+    mask = ~np.isnan(basic_vapor_yearly['最小水汽压(hPa)'])
+    valid_years = basic_vapor_yearly['年份'][mask]
+    valid_vals = basic_vapor_yearly['最小水汽压(hPa)'][mask]
+    slope, intercept = np.polyfit(valid_years, valid_vals, 1)
+    y_fit = slope * valid_years.astype(float) + intercept
+    r, p, passed = pearson_r_sig(valid_vals, y_fit, alpha=0.05)
+    dic['min_R'] = round(float(r), 3) if not np.isnan(r) else None
+    dic['min_sig_005'] = '通过' if passed else '未通过'
+    dic['min_trend_text'] = f"相关系数{dic['min_sig_005']}α=0.05显著性检验"
+    min_vapor_picture_hournum=plot_picture(basic_vapor_yearly, '年份','最小水汽压(hPa)','平均最小水汽压(hPa)','hPa','历年最小平均水汽压变化.png',0.5,0.5,data_dir,R=dic.get('min_R'))
 
     dic['average_picture'] = InlineImage(doc, average_vapor_picture_hournum, width=Mm(130))
     dic['max_picture'] = InlineImage(doc, max_vapor_picture_hournum, width=Mm(130))

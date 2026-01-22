@@ -1,4 +1,4 @@
-﻿import os
+import os
 from Utils.ordered_easydict import OrderedEasyDict as edict
 
 # 基础路径
@@ -15,9 +15,9 @@ cfg = __C
 if os.name == 'nt':
     flag = 'LOCAL'
 elif os.name == 'posix':
-    flag = 'XJ'
+    flag = 'HX'
 else:
-    flag = 'XJ'
+    flag = 'HX'
 
 # 信息配置
 __C.INFO = edict()
@@ -30,8 +30,8 @@ if flag == 'HX': # 公司服务器
     __C.INFO.IN_DATA_DIR = '/data' # 容器内保存文件夹
     __C.INFO.OUT_DATA_DIR = '/home/hadoop/data_center/apicode/qh_xj/data' # 容器外挂载保存文件夹
     __C.INFO.OUT_DATA_URL = 'http://221.122.67.145:8889/xj-feasibility/img'
-    __C.INFO.REDIS_HOST = '192.168.1.119'
-    __C.INFO.REDIS_PORT = '8086'
+    __C.INFO.REDIS_HOST = '172.17.0.2'
+    __C.INFO.REDIS_PORT = '6379'
     __C.INFO.REDIS_PWD = 'hC%34okFq&'
     __C.INFO.DB_USER = 'postgres'
     __C.INFO.DB_PWD = '2023p+yuiL34gf+hx+##!!'

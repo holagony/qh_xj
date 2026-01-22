@@ -19,6 +19,7 @@ from docx.enum.table import WD_TABLE_ALIGNMENT
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from Report.code.Function.plot_picture import plot_picture
 from Report.code.Function.plot_picture import plot_picture_2
+from scipy import stats
 
 plt.rcParams['font.sans-serif'] = ['SimHei'] 
 plt.rcParams['axes.unicode_minus'] = False 
@@ -72,6 +73,21 @@ def creat_table(document,data,expect_text):
     move_table_after(table, target)
 
 
+def pearson_r_sig(y, y_fit, alpha=0.05):
+    y = np.asarray(y, dtype=float)
+    y_fit = np.asarray(y_fit, dtype=float)
+    mask = ~(np.isnan(y) | np.isnan(y_fit))
+    y, y_fit = y[mask], y_fit[mask]
+    n = len(y)
+    if n < 3:
+        return np.nan, None, False
+    r = float(np.corrcoef(y, y_fit)[0,1])
+    df = n - 2
+    t = r * np.sqrt(df / max(1e-12, 1 - r**2))
+    p = float(2 * stats.t.sf(np.abs(t), df))
+    return r, p, p < alpha
+
+
 # post_yearly_df=rh_year
 
 def rh_report(basic_rh_yearly,basic_rh_accum,post_yearly_df,data_dir):
@@ -114,7 +130,12 @@ def rh_report(basic_rh_yearly,basic_rh_accum,post_yearly_df,data_dir):
         dic['average_rh_slope']='上升'
     else:
         dic['average_rh_slope']='下降'
-    average_rh_picture_hournum=plot_picture(basic_rh_yearly, '年份','平均相对湿度(%)','相对湿度(%)','%','历年平均相对湿度变化.png',4,4,data_dir)
+    y_fit = slope * valid_years.astype(float) + intercept
+    r, p, passed = pearson_r_sig(valid_rhperatures, y_fit, alpha=0.05)
+    dic['average_R'] = round(float(r), 3) if not np.isnan(r) else None
+    dic['average_sig_005'] = '通过' if passed else '未通过'
+    dic['average_trend_text'] = f"相关系数{dic['average_sig_005']}α=0.05显著性检验"
+    average_rh_picture_hournum=plot_picture(basic_rh_yearly, '年份','平均相对湿度(%)','相对湿度(%)','%','历年平均相对湿度变化.png',4,4,data_dir,R=dic.get('average_R'))
     dic['average_picture'] = InlineImage(doc, average_rh_picture_hournum, width=Mm(130))
 
     # 逐月变化

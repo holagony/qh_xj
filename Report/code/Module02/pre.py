@@ -19,6 +19,7 @@ from docx.enum.table import WD_TABLE_ALIGNMENT
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from Report.code.Function.plot_picture import plot_picture
 from Report.code.Function.plot_picture import plot_picture_2
+from scipy import stats
 
 plt.rcParams['font.sans-serif'] = ['SimHei'] 
 plt.rcParams['axes.unicode_minus'] = False 
@@ -72,6 +73,21 @@ def creat_table(document,data,expect_text):
     move_table_after(table, target)
 
 
+def pearson_r_sig(y, y_fit, alpha=0.05):
+    y = np.asarray(y, dtype=float)
+    y_fit = np.asarray(y_fit, dtype=float)
+    mask = ~(np.isnan(y) | np.isnan(y_fit))
+    y, y_fit = y[mask], y_fit[mask]
+    n = len(y)
+    if n < 3:
+        return np.nan, None, False
+    r = float(np.corrcoef(y, y_fit)[0,1])
+    df = n - 2
+    t = r * np.sqrt(df / max(1e-12, 1 - r**2))
+    p = float(2 * stats.t.sf(np.abs(t), df))
+    return r, p, p < alpha
+
+
 
 def pre_report(basic_pre_yearly,basic_pre_accum,post_yearly_df,data_dir):
 
@@ -113,8 +129,14 @@ def pre_report(basic_pre_yearly,basic_pre_accum,post_yearly_df,data_dir):
         dic['average_pre_slope']='上升'
     else:
         dic['average_pre_slope']='下降'
-        
-    average_pre_picture_hournum=plot_picture(basic_pre_yearly, '年份','总降水量(mm)','降水量(mm)','mm','历年平均降水量变化.png',40,40,data_dir)
+
+    y_fit = slope * valid_years.astype(float) + intercept
+    r, p, passed = pearson_r_sig(valid_preperatures, y_fit, alpha=0.05)
+    dic['average_R'] = round(float(r), 3) if not np.isnan(r) else None
+    dic['average_sig_005'] = '通过' if passed else '未通过'
+    dic['average_trend_text'] = f"相关系数{dic['average_sig_005']}α=0.05显著性检验"
+
+    average_pre_picture_hournum=plot_picture(basic_pre_yearly, '年份','总降水量(mm)','降水量(mm)','mm','历年平均降水量变化.png',40,40,data_dir,R=dic.get('average_R'))
     
     # 逐月变化
     dic['average_pre_m1']=basic_pre_accum[basic_pre_accum.iloc[0,1:-1:].astype(float).idxmin()][0]

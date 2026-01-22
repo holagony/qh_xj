@@ -20,9 +20,24 @@ from docx.enum.table import WD_TABLE_ALIGNMENT
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from Report.code.Function.plot_picture import plot_picture
 from Report.code.Function.plot_picture import plot_picture_2
+from scipy import stats
 
 plt.rcParams['font.sans-serif'] = ['SimHei'] 
 plt.rcParams['axes.unicode_minus'] = False 
+
+def pearson_r_sig(y, y_fit, alpha=0.05):
+    y = np.asarray(y, dtype=float)
+    y_fit = np.asarray(y_fit, dtype=float)
+    mask = ~(np.isnan(y) | np.isnan(y_fit))
+    y, y_fit = y[mask], y_fit[mask]
+    n = len(y)
+    if n < 3:
+        return np.nan, None, False
+    r = float(np.corrcoef(y, y_fit)[0, 1])
+    df = n - 2
+    t = r * np.sqrt(df / max(1e-12, 1 - r**2))
+    p = float(2 * stats.t.sf(np.abs(t), df))
+    return r, p, p < alpha
 
 def move_table_after(table, paragraph):
     tbl, p = table._tbl, paragraph._p
@@ -122,7 +137,12 @@ def tem_report(basic_tem_yearly,basic_tem_accum,post_yearly_df,data_dir):
         dic['average_tem_slope']='上升'
     else:
         dic['average_tem_slope']='下降'
-    average_tem_picture_hournum=plot_picture(basic_tem_yearly, '年份','平均气温(°C)','气温(℃)','℃','历年平均气温变化.png',2,2,data_dir)
+    y_fit = slope * valid_years.astype(float) + intercept
+    r, p, passed = pearson_r_sig(valid_temperatures, y_fit, alpha=0.05)
+    dic['average_R'] = round(float(r), 3) if not np.isnan(r) else None
+    dic['average_sig_005'] = '通过' if passed else '未通过'
+    dic['average_trend_text'] = f"相关系数{dic['average_sig_005']}α=0.05显著性检验"
+    average_tem_picture_hournum=plot_picture(basic_tem_yearly, '年份','平均气温(°C)','气温(℃)','℃','历年平均气温变化.png',2,2,data_dir,R=dic.get('average_R'))
 
     # 平均最高气温
     mask = ~np.isnan(basic_tem_yearly['极端最高气温(°C)'])
@@ -133,7 +153,12 @@ def tem_report(basic_tem_yearly,basic_tem_accum,post_yearly_df,data_dir):
         dic['max_tem_slope']='上升'
     else:
         dic['max_tem_slope']='下降'
-    max_tem_picture_hournum=plot_picture(basic_tem_yearly, '年份','极端最高气温(°C)','气温(℃)','℃','历年平均最高气温变化.png',2,2,data_dir)
+    y_fit = slope * valid_years.astype(float) + intercept
+    r, p, passed = pearson_r_sig(valid_temperatures, y_fit, alpha=0.05)
+    dic['max_R'] = round(float(r), 3) if not np.isnan(r) else None
+    dic['max_sig_005'] = '通过' if passed else '未通过'
+    dic['max_trend_text'] = f"相关系数{dic['max_sig_005']}α=0.05显著性检验"
+    max_tem_picture_hournum=plot_picture(basic_tem_yearly, '年份','极端最高气温(°C)','气温(℃)','℃','历年平均最高气温变化.png',2,2,data_dir,R=dic.get('max_R'))
     
     # 平均最低气温
     mask = ~np.isnan(basic_tem_yearly['极端最低气温(°C)'])
@@ -144,7 +169,12 @@ def tem_report(basic_tem_yearly,basic_tem_accum,post_yearly_df,data_dir):
         dic['min_tem_slope']='上升'
     else:
         dic['min_tem_slope']='下降'
-    min_tem_picture_hournum=plot_picture(basic_tem_yearly, '年份','极端最低气温(°C)','气温(℃)','℃','历年最低平均气温变化.png',2,2,data_dir)
+    y_fit = slope * valid_years.astype(float) + intercept
+    r, p, passed = pearson_r_sig(valid_temperatures, y_fit, alpha=0.05)
+    dic['min_R'] = round(float(r), 3) if not np.isnan(r) else None
+    dic['min_sig_005'] = '通过' if passed else '未通过'
+    dic['min_trend_text'] = f"相关系数{dic['min_sig_005']}α=0.05显著性检验"
+    min_tem_picture_hournum=plot_picture(basic_tem_yearly, '年份','极端最低气温(°C)','气温(℃)','℃','历年最低平均气温变化.png',2,2,data_dir,R=dic.get('min_R'))
 
     dic['average_picture'] = InlineImage(doc, average_tem_picture_hournum, width=Mm(130))
     dic['max_picture'] = InlineImage(doc, max_tem_picture_hournum, width=Mm(130))
