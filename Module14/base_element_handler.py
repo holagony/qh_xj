@@ -21,6 +21,18 @@ from Utils.get_url_path import save_cmadaas_data
 from docx import Document
 from docxcompose.composer import Composer
 
+
+def convert_nested_df(data):
+    if isinstance(data, dict):
+        return {k: convert_nested_df(v) for k, v in data.items()}
+    elif isinstance(data, pd.DataFrame):
+        return data.to_dict(orient='records')
+    elif isinstance(data, pd.Series):
+        return data.to_frame().T.round(1).to_dict(orient='records')
+    else:
+        return data
+
+    
 def feature_stats_handler(data_json):
     '''
     关键气象条件分析组件
@@ -175,7 +187,6 @@ def feature_stats_handler(data_json):
 
     for ele in elements:
         if ele == 'TEM':
-            result_dict.temperature = edict()
             result = key_tem_statistics(df_main, df_sub)
             result_dict['TEM'] = result
             try:
@@ -246,6 +257,8 @@ def feature_stats_handler(data_json):
     # 6.结果保存
     if cfg.INFO.SAVE_RESULT:
         result_dict['csv'] = save_cmadaas_data(data_dir, day_data=daily_df)
+    
+    result_dict = convert_nested_df(result_dict)
 
     return result_dict
 
