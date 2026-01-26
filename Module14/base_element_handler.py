@@ -69,26 +69,17 @@ def feature_stats_handler(data_json):
         sta_ids = ','.join(sta_ids)
     elif isinstance(sta_ids, int):
         sta_ids = str(sta_ids)
-    elif isinstance(sta_ids, str):
-        sta_ids = ','.join([s.strip() for s in sta_ids.split(',') if s.strip()])
-    
+
     if sub_sta_ids is not None:
         if isinstance(sub_sta_ids, list):
             sub_sta_ids = [str(ids).strip() for ids in sub_sta_ids if str(ids).strip()]
             sub_sta_ids = ','.join(sub_sta_ids)
         elif isinstance(sub_sta_ids, int):
             sub_sta_ids = str(sub_sta_ids)
-        elif isinstance(sub_sta_ids, str):
-            sub_sta_ids = ','.join([s.strip() for s in sub_sta_ids.split(',') if s.strip()])
-        parts = [p for p in sta_ids.split(',') if p]
-        sub_parts = [p for p in sub_sta_ids.split(',') if p]
-        seen = set()
-        merged = []
-        for p in parts + sub_parts:
-            if p and p not in seen:
-                merged.append(p)
-                seen.add(p)
-        all_sta_ids = ','.join(merged)
+            
+        all_sta_ids = sta_ids + ',' + sub_sta_ids
+    else:
+        all_sta_ids = sta_ids
 
     # 3.拼接需要下载的参数
     # yearly_elements = ''
@@ -181,13 +172,9 @@ def feature_stats_handler(data_json):
 
     # 6.结果生成
     result_path = []
-
-    df_main = daily_df[daily_df['Station_Id_C'].isin(parts)]
-    df_sub = daily_df[daily_df['Station_Id_C'].isin(sub_parts)]
-
     for ele in elements:
         if ele == 'TEM':
-            result = key_tem_statistics(df_main, df_sub)
+            result = key_tem_statistics(daily_df)
             result_dict['TEM'] = result
             try:
                 report_path = report_path.replace(cfg.INFO.IN_DATA_DIR, cfg.INFO.OUT_DATA_DIR)
@@ -197,7 +184,7 @@ def feature_stats_handler(data_json):
                 result_dict['TEM']['report'] = None
 
         elif ele == 'WIND':
-            result = key_wind_statistics(df_main, df_sub)
+            result = key_wind_statistics(daily_df)
             result_dict['WIND'] = result
             try:
                 report_path = report_path.replace(cfg.INFO.IN_DATA_DIR, cfg.INFO.OUT_DATA_DIR)
@@ -207,7 +194,7 @@ def feature_stats_handler(data_json):
                 result_dict['WIND']['report'] = None
 
         elif ele == 'PRE':
-            result = key_pre_statistics(df_main, df_sub)
+            result = key_pre_statistics(daily_df)
             result_dict['PRE'] = result
             try:
                 report_path = report_path.replace(cfg.INFO.IN_DATA_DIR, cfg.INFO.OUT_DATA_DIR)
@@ -217,7 +204,7 @@ def feature_stats_handler(data_json):
                 result_dict['PRE']['report'] = None
 
         elif ele == 'SNOW':
-            result = key_snow_statistics(df_main, df_sub)
+            result = key_snow_statistics(daily_df)
             result_dict['SNOW'] = result
             try:
                 report_path = report_path.replace(cfg.INFO.IN_DATA_DIR, cfg.INFO.OUT_DATA_DIR)
@@ -227,7 +214,7 @@ def feature_stats_handler(data_json):
                 result_dict['SNOW']['report'] = None
 
         elif ele == 'FRS':
-            result = key_frs_statistics(df_main, df_sub)
+            result = key_frs_statistics(daily_df)
             result_dict['FRS'] = result
             try:
                 report_path = report_path.replace(cfg.INFO.IN_DATA_DIR, cfg.INFO.OUT_DATA_DIR)

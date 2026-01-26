@@ -7,27 +7,30 @@ from Utils.config import cfg
 from Utils.get_local_data import get_local_data
 # from Report.code.Module02.wind import wind_report
 
-def key_wind_statistics(df_main, df_sub):
+def key_wind_statistics(daily_df):
     result = {}
-    concat = pd.concat([df_main, df_sub], axis=0)
-    concat['Mon'] = concat.index.month
-    concat['Year'] = concat.index.year
-    yearly_max = concat.dropna(subset=['WIN_S_Max']).groupby(['Station_Id_C', 'Year'])['WIN_S_Max'].max().reset_index()
+    daily_df['Mon'] = daily_df.index.month
+    daily_df['Year'] = daily_df.index.year
+    yearly_max = daily_df.dropna(subset=['WIN_S_Max']).groupby(['Station_Id_C', 'Year'])['WIN_S_Max'].max().reset_index()
     yearly_max.columns = ['站号', '年份', '最大风速(m/s)']
     yearly_max = yearly_max.pivot(index='年份', columns='站号', values='最大风速(m/s)')
     yearly_max = yearly_max.reindex(columns=sorted(yearly_max.columns)).reset_index(drop=False)
     
-    yearly_inst = concat.dropna(subset=['WIN_S_Inst_Max']).groupby(['Station_Id_C', 'Year'])['WIN_S_Inst_Max'].max().reset_index()
+    yearly_inst = daily_df.dropna(subset=['WIN_S_Inst_Max']).groupby(['Station_Id_C', 'Year'])['WIN_S_Inst_Max'].max().reset_index()
     yearly_inst.columns = ['站号', '年份', '极大风速(m/s)']
     yearly_inst = yearly_inst.pivot(index='年份', columns='站号', values='极大风速(m/s)')
     yearly_inst = yearly_inst.reindex(columns=sorted(yearly_inst.columns)).reset_index(drop=False)
 
-    monthly_avg_max = concat.dropna(subset=['WIN_S_Max']).groupby(['Station_Id_C', 'Mon'])['WIN_S_Max'].mean().round(1).reset_index()
+    daily_df['Mon'] = daily_df.index.month
+    daily_df['Year'] = daily_df.index.year
+    monthly_avg_max = daily_df.dropna(subset=['WIN_S_Max']).groupby(['Station_Id_C', 'Mon'])['WIN_S_Max'].mean().round(1).reset_index()
     monthly_avg_max = monthly_avg_max.pivot(index='Station_Id_C', columns='Mon', values='WIN_S_Max')
     monthly_avg_max = monthly_avg_max.reindex(columns=sorted(monthly_avg_max.columns)).reset_index()
     monthly_avg_max.columns = ['站号'] + [str(c)+'月' for c in monthly_avg_max.columns[1:]]
 
-    monthly_avg_inst = concat.dropna(subset=['WIN_S_Inst_Max']).groupby(['Station_Id_C', 'Mon'])['WIN_S_Inst_Max'].mean().round(1).reset_index()
+    daily_df['Mon'] = daily_df.index.month
+    daily_df['Year'] = daily_df.index.year
+    monthly_avg_inst = daily_df.dropna(subset=['WIN_S_Inst_Max']).groupby(['Station_Id_C', 'Mon'])['WIN_S_Inst_Max'].mean().round(1).reset_index()
     monthly_avg_inst = monthly_avg_inst.pivot(index='Station_Id_C', columns='Mon', values='WIN_S_Inst_Max')
     monthly_avg_inst = monthly_avg_inst.reindex(columns=sorted(monthly_avg_inst.columns)).reset_index()
     monthly_avg_inst.columns = ['站号'] + [str(c)+'月' for c in monthly_avg_inst.columns[1:]]
@@ -78,4 +81,4 @@ if __name__ == '__main__':
     
     df_main = post_daily_df[post_daily_df['Station_Id_C'] == '52866']
     df_sub = post_daily_df[post_daily_df['Station_Id_C'] == '52713']
-    result = key_wind_statistics(df_main, df_sub)
+    result = key_wind_statistics(post_daily_df)

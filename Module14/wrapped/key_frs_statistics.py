@@ -5,20 +5,19 @@ import pandas as pd
 from sklearn.linear_model import LinearRegression
 
 
-def key_frs_statistics(df_main, df_sub):
+def key_frs_statistics(daily_df):
     result = {}
-    concat = pd.concat([df_main, df_sub], axis=0)
-    concat['Mon'] = concat.index.month
-    concat['Year'] = concat.index.year
-    cols = [c for c in ['FRS_1st_Bot', 'FRS_2nd_Bot'] if c in concat.columns]
-    concat['frs'] = concat[cols].max(axis=1)
+    daily_df['Mon'] = daily_df.index.month
+    daily_df['Year'] = daily_df.index.year
+    cols = [c for c in ['FRS_1st_Bot', 'FRS_2nd_Bot'] if c in daily_df.columns]
+    daily_df['frs'] = daily_df[cols].max(axis=1)
 
-    yearly = concat.dropna(subset=['frs']).groupby(['Station_Id_C', 'Year'])['frs'].max().reset_index()
+    yearly = daily_df.dropna(subset=['frs']).groupby(['Station_Id_C', 'Year'])['frs'].max().reset_index()
     yearly.columns = ['站号', '年份', '最大日冻土深度(cm)']
     yearly = yearly.pivot(index='年份', columns='站号', values='最大日冻土深度(cm)')
     yearly = yearly.reindex(columns=sorted(yearly.columns)).reset_index(drop=False)
 
-    monthly = concat.dropna(subset=['frs']).groupby(['Station_Id_C', 'Mon'])['frs'].mean().round(1).reset_index()
+    monthly = daily_df.dropna(subset=['frs']).groupby(['Station_Id_C', 'Mon'])['frs'].mean().round(1).reset_index()
     monthly = monthly.pivot(index='Station_Id_C', columns='Mon', values='frs')
     monthly = monthly.reindex(columns=sorted(monthly.columns)).reset_index()
     monthly.columns = ['站号'] + [str(c) + '月' for c in monthly.columns[1:]]

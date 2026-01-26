@@ -5,28 +5,27 @@ import pandas as pd
 from sklearn.linear_model import LinearRegression
 
 
-def key_tem_statistics(df_main, df_sub):
+def key_tem_statistics(daily_df):
     result = {}
-    concat = pd.concat([df_main, df_sub], axis=0)
-    concat['Mon'] = concat.index.month
-    concat['Year'] = concat.index.year
+    daily_df['Mon'] = daily_df.index.month
+    daily_df['Year'] = daily_df.index.year
 
-    yearly_max = concat.dropna(subset=['TEM_Max']).groupby(['Station_Id_C', 'Year'])['TEM_Max'].max().reset_index()
+    yearly_max = daily_df.dropna(subset=['TEM_Max']).groupby(['Station_Id_C', 'Year'])['TEM_Max'].max().reset_index()
     yearly_max.columns = ['站号', '年份', '极端最高气温(°C)']
     yearly_max = yearly_max.pivot(index='年份', columns='站号', values='极端最高气温(°C)')
     yearly_max = yearly_max.reindex(columns=sorted(yearly_max.columns)).reset_index(drop=False)
-
-    yearly_min = concat.dropna(subset=['TEM_Min']).groupby(['Station_Id_C', 'Year'])['TEM_Min'].min().reset_index()
+    
+    yearly_min = daily_df.dropna(subset=['TEM_Min']).groupby(['Station_Id_C', 'Year'])['TEM_Min'].min().reset_index()
     yearly_min.columns = ['站号', '年份', '极端最低气温(°C)']
     yearly_min = yearly_min.pivot(index='年份', columns='站号', values='极端最低气温(°C)')
     yearly_min = yearly_min.reindex(columns=sorted(yearly_min.columns)).reset_index(drop=False)
 
-    monthly_avg_max = concat.dropna(subset=['TEM_Max']).groupby(['Station_Id_C', 'Mon'])['TEM_Max'].mean().round(1).reset_index()
+    monthly_avg_max = daily_df.dropna(subset=['TEM_Max']).groupby(['Station_Id_C', 'Mon'])['TEM_Max'].mean().round(1).reset_index()
     monthly_avg_max = monthly_avg_max.pivot(index='Station_Id_C', columns='Mon', values='TEM_Max')
     monthly_avg_max = monthly_avg_max.reindex(columns=sorted(monthly_avg_max.columns)).reset_index()
     monthly_avg_max.columns = ['站号'] + [str(c) + '月' for c in monthly_avg_max.columns[1:]]
 
-    monthly_avg_min = concat.dropna(subset=['TEM_Min']).groupby(['Station_Id_C', 'Mon'])['TEM_Min'].mean().round(1).reset_index()
+    monthly_avg_min = daily_df.dropna(subset=['TEM_Min']).groupby(['Station_Id_C', 'Mon'])['TEM_Min'].mean().round(1).reset_index()
     monthly_avg_min = monthly_avg_min.pivot(index='Station_Id_C', columns='Mon', values='TEM_Min')
     monthly_avg_min = monthly_avg_min.reindex(columns=sorted(monthly_avg_min.columns)).reset_index()
     monthly_avg_min.columns = ['站号'] + [str(c) + '月' for c in monthly_avg_min.columns[1:]]

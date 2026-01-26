@@ -5,18 +5,17 @@ import pandas as pd
 from sklearn.linear_model import LinearRegression
 
 
-def key_snow_statistics(df_main, df_sub):
+def key_snow_statistics(daily_df):
     result = {}
-    concat = pd.concat([df_main, df_sub], axis=0)
-    concat['Mon'] = concat.index.month
-    concat['Year'] = concat.index.year
+    daily_df['Mon'] = daily_df.index.month
+    daily_df['Year'] = daily_df.index.year
 
-    yearly = concat.dropna(subset=['Snow_Depth']).groupby(['Station_Id_C', 'Year'])['Snow_Depth'].max().reset_index()
+    yearly = daily_df.dropna(subset=['Snow_Depth']).groupby(['Station_Id_C', 'Year'])['Snow_Depth'].max().reset_index()
     yearly.columns = ['站号', '年份', '最大日积雪深度(cm)']
     yearly = yearly.pivot(index='年份', columns='站号', values='最大日积雪深度(cm)')
     yearly = yearly.reindex(columns=sorted(yearly.columns)).reset_index(drop=False)
 
-    monthly = concat.dropna(subset=['Snow_Depth']).groupby(['Station_Id_C', 'Mon'])['Snow_Depth'].mean().round(1).reset_index()
+    monthly = daily_df.dropna(subset=['Snow_Depth']).groupby(['Station_Id_C', 'Mon'])['Snow_Depth'].mean().round(1).reset_index()
     monthly = monthly.pivot(index='Station_Id_C', columns='Mon', values='Snow_Depth')
     monthly = monthly.reindex(columns=sorted(monthly.columns)).reset_index()
     monthly.columns = ['站号'] + [str(c) + '月' for c in monthly.columns[1:]]
