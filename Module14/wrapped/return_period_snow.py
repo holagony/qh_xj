@@ -151,9 +151,6 @@ class calc_return_period_snow:
         snow_data = self.df_sequence['Snow_Depth_Max'].resample('1A').max()
         snow_data = snow_data.round(1).dropna()
 
-        if snow_data.shape[0] < 10:
-            raise Exception('该参证站日数据存在缺测，转换后得到有效历年样本小于10个，不能进行后续重现期计算')
-
         # 保存原始数据（包含0值）用于展示
         snow_data_save = snow_data.to_frame().copy()
         snow_data_save.insert(loc=0, column='year', value=snow_data_save.index.year)
@@ -165,14 +162,6 @@ class calc_return_period_snow:
         snow_data_filtered = snow_data[snow_data > 0]
         if len(snow_data_filtered) < 5:
             raise Exception(f'过滤0值后的有效积雪深度数据不足5个样本（当前{len(snow_data_filtered)}个），无法进行重现期计算')
-
-        # 添加统计信息到结果中
-        result_dict.data_statistics = {
-            '总样本数': len(snow_data),
-            '有效样本数（>0cm）': len(snow_data_filtered),
-            '零值样本数': len(snow_data) - len(snow_data_filtered),
-            '零值比例(%)': round((len(snow_data) - len(snow_data_filtered)) / len(snow_data) * 100, 1)
-        }
 
         # Step1 频率转换
         # convert_periods = self.frequency_conversion()

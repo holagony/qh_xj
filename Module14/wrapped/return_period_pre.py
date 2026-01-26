@@ -136,10 +136,6 @@ class calc_return_period_pre:
             max_pre_seq = self.df_sequence['PRE_Time_2020'].resample('1A', closed='right', label='right').max()
             max_pre_seq = max_pre_seq.round(1)
 
-            year_vals = max_pre_seq.dropna()
-            if year_vals.shape[0] < 15:
-                raise Exception('该参证站日数据存在缺测，转换后得到有效历年样本小于15个，不能进行后续重现期计算')
-
             pre_df = max_pre_seq.to_frame()
             pre_df.insert(loc=0, column='year', value=pre_df.index.year)
             pre_df.columns = ['年份', '最大日降水量(mm)']

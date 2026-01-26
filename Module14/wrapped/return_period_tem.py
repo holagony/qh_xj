@@ -180,10 +180,6 @@ class calc_return_period_tem:
             max_tem_seq = self.df_sequence['TEM_Max'].resample('1A', closed='right', label='right').max()
             max_tem_seq = max_tem_seq.round(1)
 
-            year_vals = max_tem_seq.dropna()
-            if year_vals.shape[0] < 15:
-                raise Exception('该参证站日数据存在缺测，转换后得到有效历年样本小于15个，不能进行后续重现期计算')
-
             max_tem_seq_save = max_tem_seq.to_frame().copy()
             max_tem_seq_save.insert(loc=0, column='year', value=max_tem_seq_save.index.year)
             max_tem_seq_save.columns = ['年份','极端最高气温(°C)']
@@ -192,6 +188,7 @@ class calc_return_period_tem:
             result_dict.max_tem.data = max_tem_seq_save.to_dict(orient='records')
 
             # 重现期计算
+            year_vals = max_tem_seq.dropna()
             if self.fitting_method is not None:
                 params_dict, max_values_dict, ks_values = self.calc_return_period_values(year_vals, 'ex_tem_max')
                 result_dict.max_tem.return_result = edict()
@@ -218,10 +215,6 @@ class calc_return_period_tem:
             min_tem_seq = self.df_sequence['TEM_Min'].resample('1A', closed='right', label='right').min()
             min_tem_seq = min_tem_seq.round(1)
 
-            year_vals = min_tem_seq.dropna()
-            if year_vals.shape[0] < 15:
-                raise Exception('该参证站日数据存在缺测，转换后得到有效历年样本小于15个，不能进行后续重现期计算')
-
             min_tem_seq_save = min_tem_seq.to_frame().copy()
             min_tem_seq_save.insert(loc=0, column='year', value=min_tem_seq_save.index.year)
             min_tem_seq_save.columns = ['年份','极端最低气温(°C)']
@@ -230,6 +223,7 @@ class calc_return_period_tem:
             result_dict.min_tem.data = min_tem_seq_save.to_dict(orient='records')
             
             # 重现期计算
+            year_vals = min_tem_seq.dropna()
             if self.fitting_method is not None:
                 params_dict, max_values_dict, ks_values = self.calc_return_period_values(year_vals, 'ex_tem_min')
                 result_dict.min_tem.return_result = edict()

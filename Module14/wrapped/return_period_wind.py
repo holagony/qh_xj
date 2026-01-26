@@ -16,14 +16,11 @@ matplotlib.use('agg')
 class calc_return_period_wind:
 
     def __init__(self, df_sequence, return_years, fitting_method, img_path, main_station):
-
         self.main_sequence = df_sequence
         self.return_years = return_years
         self.fitting_method = fitting_method
         self.img_path = img_path
         self.main_station = main_station
-        if self.threshold == None:
-            self.threshold = 0
 
     def calc_return_period_values(self, data_in):
         '''
@@ -32,7 +29,6 @@ class calc_return_period_wind:
         params_dict = edict()  # 参数字典
         max_values_dict = edict()  # 重现期结果列表
         ks_values = edict()  # KS检验结果dict
-        # p3_base = edict()
 
         if 'Gumbel' in self.fitting_method:
             loc, scale = fitting.estimate_parameters_gumbel(data_in, method='MOM')  # 根据现有数据计算该分布的参数
@@ -157,20 +153,6 @@ class calc_return_period_wind:
         result_dict.return_years = self.return_years
         result_dict.wind_data = year_vals_save.to_dict(orient='records')
         result_dict.wind_data_i = year_vals_i_save.to_dict(orient='records')
-
-        # Step1 对参证站风速进行迁站订正
-        if self.relocation_year is not None:
-            result_dict.consistency_revision = edict()
-            result_dict.consistency_revision.before = main_wind_seq.values.tolist()  # 订正前结果存入
-            main_wind_seq = self.wind_consistency_revision(main_wind_seq)
-            result_dict.consistency_revision.after = main_wind_seq.values.tolist()  # 订正后结果存入
-
-        # Step2 对参证站风速进行高度订正
-        if self.height_revision_year is not None:
-            result_dict.height_revision = edict()
-            result_dict.height_revision.before = main_wind_seq.values.tolist()
-            main_wind_seq = self.wind_height_revision(main_wind_seq)
-            result_dict.height_revision.after = main_wind_seq.tolist()
 
         # Step3 参证站重现期计算
         if self.fitting_method is not None:

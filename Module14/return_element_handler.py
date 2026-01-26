@@ -1,7 +1,6 @@
 import logging
 import os
 import uuid
-import pickle
 import json
 import simplejson
 import requests
@@ -18,13 +17,24 @@ from Report.code.Module04.re_wind import re_wind_report,re_wind_report_pg
 from Report.code.Module04.re_snow import re_snow_report,re_snow_report_pg
 from Report.code.Module04.re_tem import re_tem_report,re_tem_report_pg
 from Report.code.Module04.re_frs import re_frs_report,re_frs_report_pg
-
 from Utils.get_url_path import save_cmadaas_data
 from Module14.wrapped.return_period_wind import calc_return_period_wind
 from Module14.wrapped.return_period_pre import calc_return_period_pre
 from Module14.wrapped.return_period_snow import calc_return_period_snow
 from Module14.wrapped.return_period_tem import calc_return_period_tem
 from Module14.wrapped.return_period_frs import calc_return_period_frs
+
+
+def convert_nested_df(data):
+    if isinstance(data, dict):
+        return {k: convert_nested_df(v) for k, v in data.items()}
+    elif isinstance(data, pd.DataFrame):
+        return data.to_dict(orient='records')
+    elif isinstance(data, pd.Series):
+        return data.to_frame().T.round(1).to_dict(orient='records')
+    else:
+        return data
+
 
 def callback(url, result_id, result):
     header = {'Content-Type': 'application/json'}
@@ -46,12 +56,9 @@ class workerReturnPeriod:
         element = data_json.get('element') # ['wind','pre','snow','frs','tem']
         if isinstance(element, str):
             elements = element.split(',')
-        if isinstance(element, list):
-            elements = [str(e) for e in element]
         elements = [e.upper() for e in elements]
 
         return_years = [30, 50, 100]
-        return_years.sort() # 排序
         fitting_method = ['Gumbel', 'P3']
         result_id = data_json.get('id')
         callback_url = data_json.get('callback')
@@ -74,7 +81,7 @@ class workerReturnPeriod:
         start_year = int(sel_years[0])
         end_year = int(sel_years[1])
         range_year = np.arange(start_year, end_year + 1, 1)
-        assert len(range_year) >= 15, '选择的数据年份太短，小于10年，可能会出现计算错误或数据不足的情况，请重新选择'
+        assert len(range_year) >= 20, '选择的数据年份太短，小于20年，可能会出现计算错误或数据不足的情况，请重新选择'
 
         # 拼接需要下载的参数
         daily_elements = ''
@@ -111,6 +118,7 @@ class workerReturnPeriod:
         df_sequence = daily_df[daily_df['Station_Id_C'] == main_station]
         all_results = edict()
         all_results['uuid'] = uuid4
+
         for ele in elements:
             if ele == 'WIND':
                 wind_s = calc_return_period_wind(df_sequence, return_years, fitting_method, data_dir, main_station)
@@ -126,6 +134,7 @@ class workerReturnPeriod:
                         r['report'] = report_path.replace(cfg.INFO.OUT_DATA_DIR, cfg.INFO.OUT_DATA_URL)
                 except Exception as e:
                     r['report'] = None
+
                 if 'img_save_path' in r:
                     try:
                         for name, path in r['img_save_path'].items():
@@ -149,6 +158,7 @@ class workerReturnPeriod:
                         r['report'] = report_path.replace(cfg.INFO.OUT_DATA_DIR, cfg.INFO.OUT_DATA_URL)
                 except Exception as e:
                     r['report'] = None
+
                 if 'img_save_path' in r:
                     try:
                         for name, path in r['img_save_path'].items():
@@ -176,6 +186,7 @@ class workerReturnPeriod:
                         r['report'] = report_path.replace(cfg.INFO.OUT_DATA_DIR, cfg.INFO.OUT_DATA_URL)
                 except Exception as e:
                     r['report'] = None
+
                 if 'img_save_path' in r:
                     try:
                         for name, path in r['img_save_path'].items():
@@ -203,6 +214,7 @@ class workerReturnPeriod:
                         r['report'] = report_path.replace(cfg.INFO.OUT_DATA_DIR, cfg.INFO.OUT_DATA_URL)
                 except Exception as e:
                     r['report'] = None
+
                 if 'img_save_path' in r:
                     try:
                         for name, path in r['img_save_path'].items():
@@ -231,6 +243,7 @@ class workerReturnPeriod:
                         
                 except Exception as e:
                     r['report'] = None
+
                 if 'img_save_path' in r:
                     try:
                         for name, path in r['img_save_path'].items():
@@ -240,6 +253,7 @@ class workerReturnPeriod:
                         pass
                 all_results['FRS'] = r
 
+        # 完整新分析
         years_split = years.split(',')
         all_results.check_result = edict()
         if daily_df is not None and len(daily_df) != 0:
@@ -251,6 +265,8 @@ class workerReturnPeriod:
         if cfg.INFO.SAVE_RESULT:
             all_results['csv'] = save_cmadaas_data(data_dir, day_data=daily_df)
 
+        # 最后结果
+        all_results = convert_nested_df(all_results)
         return_data = simplejson.dumps({'code': code, 'msg': msg, 'data': all_results}, ensure_ascii=False, ignore_nan=True)
         callback(callback_url, result_id, return_data)
 

@@ -150,9 +150,6 @@ class calc_return_period_frs:
         self.df_sequence['FRX_Depth_Max'] = self.df_sequence[['FRS_1st_Bot', 'FRS_2nd_Bot']].max(axis=1).round(1)
         frs_data = self.df_sequence['FRX_Depth_Max'].resample('1A').max().dropna()
 
-        if frs_data.shape[0] < 10:
-            raise Exception('该参证站日数据存在缺测，转换后得到有效历年样本小于10个，不能进行后续重现期计算')
-
         # 保存原始数据（包含0值）用于展示
         frs_data_save = frs_data.to_frame().copy()
         frs_data_save.insert(loc=0, column='year', value=frs_data_save.index.year)
