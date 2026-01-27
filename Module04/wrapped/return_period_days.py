@@ -29,10 +29,9 @@ class calc_return_period_days:
     '''
 
 
-    def __init__(self, df_sequence, return_years, CI, fitting_method, img_path, element):
+    def __init__(self, df_sequence, return_years, fitting_method, img_path, element):
         self.df_sequence = df_sequence
         self.return_years = return_years  # 重现期列表 list
-        self.CI = CI
         self.fitting_method = fitting_method  # 拟合方法列表 list
         self.img_path = img_path
         self.element = element
@@ -80,82 +79,6 @@ class calc_return_period_days:
             # p3_base = p3_result
 
         return params_dict, max_values_dict, ks_values  #, p3_base
-
-    def calc_confidence_interval(self, data_in, periods):
-        '''
-        计算参证站重现期的置信区间
-        '''
-        ci_result = []
-        ci_num = 500
-
-        # 置信水平对应的百分位区间 array shape(n,2)
-        ci_array = []
-        for ci in self.CI:
-            bar = (100 - ci) / 2
-            left = 100 - ci - bar
-            right = ci + bar
-            ci_array.append([left, right])
-
-        ci_array = np.array(ci_array) / 100
-
-        if 'Gumbel' in self.fitting_method:
-            for i in range(ci_num):
-                bootstrap = data_in.sample(n=len(data_in) - 5, replace=True, random_state=i)
-                loc, scale = fitting.estimate_parameters_gumbel(bootstrap, method='MOM')
-                max_values = fitting.get_max_values_gumbel(periods, loc, scale)  # numpy array
-                max_values = max_values.reshape(1, -1)
-
-                if i == 0:
-                    all_max_values = max_values
-                else:
-                    all_max_values = np.concatenate((all_max_values, max_values), axis=0)  # shape(1000,5) 每行是一个重现期结果, 每列是相应的重现期
-
-            # data = np.random.randint(0,500,size=20).reshape(4,5)
-            # result = np.quantile(data, CI_array, axis=0) # CI_array:(3,2), result:(3,2,5) 3代表不同区间, 2行代表计算出来的上下限数值, 5列对应不同重现期
-            gumbel_ci = np.quantile(all_max_values, ci_array, axis=0)
-            gumbel_ci = gumbel_ci.transpose(2, 0, 1)
-            gumbel_ci = gumbel_ci.reshape(-1, 2)
-            ci_result.append(gumbel_ci)
-
-        if 'P3' in self.fitting_method:
-            for i1 in range(ci_num):
-                bootstrap = data_in.sample(n=len(data_in) - 5, replace=True, random_state=i1)
-                skew, loc, scale = fitting.estimate_parameters_pearson3(bootstrap, method='normal')
-                max_values = fitting.get_max_values_pearson3(periods, 0, skew, loc, scale)
-                max_values = max_values.reshape(1, -1)
-
-                if i1 == 0:
-                    all_max_values = max_values
-                else:
-                    all_max_values = np.concatenate((all_max_values, max_values), axis=0)  # shape(1000,5) 每行是一个重现期结果, 每列是相应的重现期
-
-            p3_ci = np.quantile(all_max_values, ci_array, axis=0)
-            p3_ci = p3_ci.transpose(2, 0, 1)
-            p3_ci = p3_ci.reshape(-1, 2)
-            ci_result.append(p3_ci)
-
-        # 所有分布的结果拼接
-        ci_result = np.array(ci_result)
-        ci_result = ci_result.transpose(1, 0, 2)
-        ci_result = ci_result.reshape(-1, 2 * len(self.fitting_method))
-        ci_result = ci_result.round(3)
-
-        # ci_result转成dataframe
-        interval = self.CI
-        index = pd.MultiIndex.from_product([self.return_years, interval], names=['重现期(a)', '置信水平(%)'])
-        columns = []
-        
-        for col in self.fitting_method:
-            if col == 'Gumbel':
-                columns.append('下限（耿贝尔）')
-                columns.append('上限（耿贝尔）')
-            else:
-                columns.append('下限(皮尔逊Ⅲ型)')
-                columns.append('上限(皮尔逊Ⅲ型)')
-                
-        ci_result = pd.DataFrame(ci_result, columns=columns, index=index).reset_index()
-
-        return ci_result
 
     def get_fig_ax(self):
         fig, ax = plt.subplots(figsize=(7, 5))
@@ -209,9 +132,7 @@ class calc_return_period_days:
     
         # 关闭图框
         plt.cla()
-    
         return save_path
-
 
     def run_days(self):
         '''
@@ -225,10 +146,7 @@ class calc_return_period_days:
     
         frs_data = self.df_sequence[self.element].round(3)
         frs_data = frs_data.dropna()
-        
-        if frs_data.shape[0] < 10:
-            raise Exception('该参证站日数据存在缺测，转换后得到有效历年样本小于10个，不能进行后续重现期计算')
-        
+
         frs_data_save = frs_data.to_frame().copy()
         frs_data_save.insert(loc=0, column='year', value=frs_data_save.index.year)
         frs_data_save.columns = ['年份',f'{self.name[self.element]}']
@@ -237,7 +155,6 @@ class calc_return_period_days:
             
         # Step2 删除0值（与频率转换保持一致）
         frs_data_filtered = frs_data[frs_data > 0]
-        
         if frs_data_filtered.shape[0] < 10:
             raise Exception('删除0值后有效样本小于10个，不能进行后续重现期计算')
     
@@ -248,12 +165,6 @@ class calc_return_period_days:
             result_dict.main_return_result['max_values'] = max_values_dict
             result_dict.main_return_result['distribution_params'] = params_dict
 
-    
-        # Step4 重现期的置信区间计算（使用过滤后的数据）
-        if self.CI is not None and len(self.CI) != 0:
-            ci_result = self.calc_confidence_interval(frs_data_filtered, self.return_years)
-            result_dict.confidence_interval = ci_result.to_dict(orient='records')
-    
         # Step5 重现期画图（使用过滤后的数据）
         result_dict.img_save_path = edict()
         keys = list(params_dict.keys())

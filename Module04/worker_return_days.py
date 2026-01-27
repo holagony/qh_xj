@@ -49,7 +49,6 @@ class workerReturnDays:
         return_period_flag = data_json.get('return_period_flag',0)  # 重现期/频率 0 or 1
         return_period = data_json['return_period']
         fitting_method = data_json['fitting_method']
-        CI = data_json.get('CI')  # 置信区间
         result_id = data_json.get('id')
         callback_url = data_json.get('callback')
 
@@ -99,7 +98,6 @@ class workerReturnDays:
         elif element == 'PRE_Time_2020':
             monthly_elements = 'PRE_Time_2020,'
 
-        
         # 4.数据获取
         if cfg.INFO.READ_LOCAL:
             if element in ['Thund_Days','SaSt_Days','FISa_Days','FIDu_Days','Hail_Days','GSS_Days','Snow_Days']:
@@ -127,7 +125,6 @@ class workerReturnDays:
         # 5.生成结果
         # 新增月数据转年数据
         if element in ['Thund_Days','SaSt_Days','FISa_Days','FIDu_Days','Hail_Days','GSS_Days','Snow_Days']:
-            
             yearly_df = monthly_df.resample('1A').sum()
             yearly_df['Station_Name'] = monthly_df['Station_Name'].iloc[0]
             yearly_df['Station_Id_C'] = monthly_df['Station_Id_C'].iloc[0]
@@ -137,10 +134,8 @@ class workerReturnDays:
             yearly_df['Station_Name'] = daily_df['Station_Name'].iloc[0]
             yearly_df['Station_Id_C'] = daily_df['Station_Id_C'].iloc[0]
 
-
-            
         try:
-            calc = calc_return_period_days(yearly_df, return_years, CI, fitting_method, data_dir, element)
+            calc = calc_return_period_days(yearly_df, return_years, fitting_method, data_dir, element)
             day_result = calc.run_days()
   
             try:
