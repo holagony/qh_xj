@@ -135,6 +135,7 @@ class calc_return_period_pre:
         if self.df_sequence is not None:
             max_pre_seq = self.df_sequence['PRE_Time_2020'].resample('1A', closed='right', label='right').max()
             max_pre_seq = max_pre_seq.round(1)
+            max_pre_seq = max_pre_seq.replace([np.inf, -np.inf], np.nan).dropna()
 
             pre_df = max_pre_seq.to_frame()
             pre_df.insert(loc=0, column='year', value=pre_df.index.year)

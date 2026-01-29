@@ -148,7 +148,7 @@ class calc_return_period_snow:
         result_dict = edict()
         result_dict.return_years = self.return_years
 
-        snow_data = self.df_sequence['Snow_Depth_Max'].resample('1A').max()
+        snow_data = self.df_sequence['Snow_Depth'].resample('1A').max()
         snow_data = snow_data.round(1).dropna()
 
         # 保存原始数据（包含0值）用于展示

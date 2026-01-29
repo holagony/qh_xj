@@ -4,6 +4,15 @@ from scipy import stats
 from Utils.config import cfg
 
 
+def _to_finite_1d(values):
+    if isinstance(values, pd.Series):
+        arr = values.to_numpy(dtype=float, copy=False)
+    else:
+        arr = np.asarray(values, dtype=float)
+    arr = np.ravel(arr)
+    return arr[np.isfinite(arr)]
+
+
 def estimate_parameters_gumbel(data, method='normal'):
     '''
     将观测数据拟合入Gumbel分布，得到数据在Gumbel分布下的偏移和缩放参数
@@ -16,6 +25,10 @@ def estimate_parameters_gumbel(data, method='normal'):
         loc: 输入数据在Gumbel分布下的偏移参数；类型: float
         scale: 输入数据在Gumbel分布下的缩放参数；类型: float
     '''
+    data = _to_finite_1d(data)
+    if data.size < 1:
+        raise ValueError('输入数据为空或包含非有限值')
+
     if method == 'normal':  # MLE
         loc, scale = stats.gumbel_r.fit(data)
 
@@ -67,6 +80,10 @@ def estimate_parameters_pearson3(data, method):
         Cs: 输入数据的偏态系数；类型: float
         注: Cs等价于skew，使用Cv/Cs参数时，loc=0/scale=1
     '''
+    data = _to_finite_1d(data)
+    if data.size < 1:
+        raise ValueError('输入数据为空或包含非有限值')
+
     if method == 'normal':  # MLE
         skew, loc, scale = stats.pearson3.fit(data)
         skew = round(skew, 3)
@@ -76,6 +93,8 @@ def estimate_parameters_pearson3(data, method):
         return skew, loc, scale
 
     else:  # method of moments
+        if data.size < 3:
+            raise ValueError('样本量不足，无法计算偏态系数')
         Ex = np.mean(data)  # 均值
         K = data / Ex  # 模比系数
         Cv = np.sqrt(np.sum((K - 1)**2) / (len(data) - 1))  # 变差系数
@@ -135,11 +154,20 @@ def kolmogorov_smirnov_test(data, cdf_func, distr_params=None):
         ks_statistic: KS检验的计算结果(D值)；类型: float
         p_val: 计算得到的p值，p大于0.05说明无差异；类型: float
     '''
+    data = _to_finite_1d(data)
+    if data.size < 1:
+        raise ValueError('输入数据为空或包含非有限值')
+
     if distr_params is not None:
         ks_statistic, p_val = stats.kstest(data, cdf=cdf_func, args=distr_params)
-
     else:
-        ks_statistic, p_val = stats.kstest(data, cdf=cdf_func)
+        if callable(cdf_func) or isinstance(cdf_func, str):
+            ks_statistic, p_val = stats.kstest(data, cdf=cdf_func)
+        else:
+            other = _to_finite_1d(cdf_func)
+            if other.size < 1:
+                raise ValueError('对比样本为空或包含非有限值')
+            ks_statistic, p_val = stats.ks_2samp(data, other)
 
     ks_statistic = round(ks_statistic, 5)
     p_val = round(p_val, 5)

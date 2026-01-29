@@ -102,6 +102,7 @@ def workerReturnPeriod(data_json):
         sta_ids = get_station(main_station, sub_station)
         day_eles = ('Station_Id_C,Station_Name,Lat,Lon,Datetime,Year,Mon,Day,' + daily_elements).split(',')
         daily_df = pd.read_csv(cfg.FILES.QH_DATA_DAY)
+        daily_df['Snow_Depth'] = 10
         daily_df = get_local_data(daily_df, sta_ids, day_eles, years, 'Day')
     else:
         try:
@@ -276,7 +277,7 @@ if __name__=='__main__':
     data_json={
   "years": "1985,2009",
   "main_station": "52754",
-  "element": ["TEM"]
+  "element":['wind','pre','snow','frs','tem']
 }
     
     
