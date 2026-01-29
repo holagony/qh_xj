@@ -51,7 +51,7 @@ def workerReturnPeriod(data_json):
 
     years = data_json.get('years')
     main_station = data_json.get('main_station')  # 参证站
-    elements = data_json.get('elements') # ['wind','pre','snow','frs','tem']
+    elements = data_json.get('element') # ['wind','pre','snow','frs','tem']
     if isinstance(elements, str):
         elements = elements.split(',')
     elements = [e.upper() for e in elements]
@@ -276,7 +276,7 @@ if __name__=='__main__':
     data_json={
   "years": "1985,2009",
   "main_station": "52754",
-  "elements": ["TEM"]
+  "element": ["TEM"]
 }
     
     
