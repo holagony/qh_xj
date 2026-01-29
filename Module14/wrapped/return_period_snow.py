@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-import probscale
+# import probscale
 import matplotlib
 import matplotlib.pyplot as plt
 from scipy import stats
@@ -122,7 +122,7 @@ class calc_return_period_snow:
         ax.grid(True)
         ax.set_xlabel('KS-test: ' + str(ks_val.round(3)) + '   频率P(%)', fontproperties=font)
         ax.set_ylabel(new_y_axis_name, fontproperties=font)
-        ax.set_xscale('prob')
+        fitting.apply_prob_scale(ax, axis='x', percent=True)
         plt.xticks(size=7)
 
         ax.set_xlim(xlim_min, xlim_max)

@@ -145,3 +145,36 @@ def kolmogorov_smirnov_test(data, cdf_func, distr_params=None):
     p_val = round(p_val, 5)
 
     return ks_statistic, p_val
+
+
+def apply_prob_scale(ax, axis='x', percent=True, eps=1e-6, ticks=None):
+    def forward(values):
+        values = np.asarray(values, dtype=float)
+        if percent:
+            values = values / 100.0
+        values = np.clip(values, eps, 1 - eps)
+        return stats.norm.ppf(values)
+
+    def inverse(values):
+        values = np.asarray(values, dtype=float)
+        values = stats.norm.cdf(values)
+        if percent:
+            values = values * 100.0
+        return values
+
+    if axis == 'x':
+        ax.set_xscale('function', functions=(forward, inverse))
+    elif axis == 'y':
+        ax.set_yscale('function', functions=(forward, inverse))
+    else:
+        raise ValueError("axis must be 'x' or 'y'")
+
+    if ticks is None:
+        ticks = [0.1, 0.2, 0.5, 1, 2, 5, 10, 20, 50, 80, 90, 95, 98, 99, 99.5]
+
+    if axis == 'x':
+        ax.set_xticks(ticks)
+        ax.set_xticklabels([str(t) for t in ticks])
+    else:
+        ax.set_yticks(ticks)
+        ax.set_yticklabels([str(t) for t in ticks])

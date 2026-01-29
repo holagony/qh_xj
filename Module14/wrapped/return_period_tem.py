@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-import probscale
+# import probscale
 import matplotlib
 import matplotlib.pyplot as plt
 from scipy import stats
@@ -150,7 +150,7 @@ class calc_return_period_tem:
         ax.grid(True)
         ax.set_xlabel('KS-test: ' + str(ks_val.round(3)) + '   频率P(%)', fontproperties=font)
         ax.set_ylabel(new_y_axis_name, fontproperties=font)
-        ax.set_xscale('prob')
+        fitting.apply_prob_scale(ax, axis='x', percent=True)
         plt.xticks(size=7)
 
         empi_prob = (np.arange(len(data_in)) + 1) / (len(data_in) + 1) * 100
@@ -278,12 +278,12 @@ if __name__ == '__main__':
     CI = None
     fitting_method = ['Gumbel', 'P3']
     element_name = ['ex_tem_max', 'ex_tem_min', 'base_tem_max', 'base_tem_min']
-    img_path = r'C:/Users/MJY/Desktop/result'
+    img_path = r'D:\data'
     from_database = 0
     max_threshold = 0
     min_threshold = 0
     intercept = True
-    ccc = calc_return_period_tem(df_sequence, return_years, CI, fitting_method, element_name, img_path, sub_df, from_database, max_threshold, min_threshold, intercept)
+    ccc = calc_return_period_tem(df_sequence, return_years, fitting_method, img_path)
     tem_result = ccc.run()
     
     # Gumbel画直线代码
