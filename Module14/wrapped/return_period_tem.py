@@ -186,8 +186,7 @@ class calc_return_period_tem:
             max_tem_seq_save.insert(loc=0, column='year', value=max_tem_seq_save.index.year)
             max_tem_seq_save.columns = ['年份','极端最高气温(°C)']
             max_tem_seq_save.reset_index(drop=True, inplace=True)
-            result_dict.max_tem = edict()
-            result_dict.max_tem.data = max_tem_seq_save.to_dict(orient='records')
+            result_dict.max_tem = max_tem_seq_save.to_dict(orient='records')
 
             # 重现期计算
             year_vals = max_tem_seq.dropna()
@@ -219,8 +218,7 @@ class calc_return_period_tem:
             min_tem_seq_save.insert(loc=0, column='year', value=min_tem_seq_save.index.year)
             min_tem_seq_save.columns = ['年份','极端最低气温(°C)']
             min_tem_seq_save.reset_index(drop=True, inplace=True)
-            result_dict.min_tem = edict()
-            result_dict.min_tem.data = min_tem_seq_save.to_dict(orient='records')
+            result_dict.min_tem = min_tem_seq_save.to_dict(orient='records')
             
             # 重现期计算
             year_vals = min_tem_seq.dropna()
