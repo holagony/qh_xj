@@ -142,29 +142,29 @@ class calc_return_period_pre:
             pre_df.columns = ['年份', '最大日降水量(mm)']
             pre_df.reset_index(drop=True, inplace=True)
 
-            result_dict.PRE_Max_Day = edict()
-            result_dict.PRE_Max_Day.data = pre_df.to_dict(orient='records')
+            result_dict = edict()
+            result_dict.data = pre_df.to_dict(orient='records')
 
             # 重现期计算
             params_dict, max_values_dict, ks_values = self.calc_return_period_values(max_pre_seq)
-            result_dict.PRE_Max_Day.return_result = edict()
-            result_dict.PRE_Max_Day.return_result['max_values'] = max_values_dict
-            result_dict.PRE_Max_Day.return_result['distribution_params'] = params_dict
+            result_dict.return_result = edict()
+            result_dict.return_result['max_values'] = max_values_dict
+            result_dict.return_result['distribution_params'] = params_dict
 
             # 画图
-            result_dict.PRE_Max_Day.img_save_path = edict()
+            result_dict.img_save_path = edict()
             keys = list(params_dict.keys())
             x = np.linspace(0.01, 100, 1000)
 
             if 'Gumbel' in keys:
                 y = fitting.get_max_values_gumbel(100 / x, params_dict['Gumbel'][0], params_dict['Gumbel'][1])
                 save_path = self.plot_result(fig, ax, max_pre_seq, x, y, '最大日降水量', 'Gumbel', ks_values['Gumbel_ks'])
-                result_dict.PRE_Max_Day.img_save_path['Gumbel_plot'] = save_path
+                result_dict.img_save_path['Gumbel_plot'] = save_path
 
             if 'P3' in keys:
                 y = fitting.get_max_values_pearson3(100 / x, 0, params_dict['P3'][0], params_dict['P3'][1], params_dict['P3'][2])
                 save_path = self.plot_result(fig, ax, max_pre_seq, x, y, '最大日降水量', 'Pearson3', ks_values['P3_ks'])
-                result_dict.PRE_Max_Day.img_save_path['P3_plot'] = save_path
+                result_dict.img_save_path['P3_plot'] = save_path
 
             # 关闭图框
             plt.cla()

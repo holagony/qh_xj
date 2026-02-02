@@ -174,6 +174,8 @@ class calc_return_period_tem:
         '''
         fig, ax = self.get_fig_ax()
         result_dict = edict()
+        result_dict.main_return_result = edict()   
+        result_dict.img_save_path = edict()             
         result_dict.return_years = self.return_years
 
         if 'ex_tem_max' in self.element_name:
@@ -191,25 +193,23 @@ class calc_return_period_tem:
             year_vals = max_tem_seq.dropna()
             if self.fitting_method is not None:
                 params_dict, max_values_dict, ks_values = self.calc_return_period_values(year_vals, 'ex_tem_max')
-                result_dict.max_tem.return_result = edict()
-                result_dict.max_tem.return_result['max_values'] = max_values_dict
-                result_dict.max_tem.return_result['distribution_params'] = params_dict
+                result_dict.main_return_result['max_values_max'] = max_values_dict
+                result_dict.main_return_result['distribution_params_max'] = params_dict
                 # result_dict.max_tem['p3_base'] = p3_base
 
             # 画图
-            result_dict.max_tem.img_save_path = edict()
             keys = list(params_dict.keys())
             x = np.linspace(0.01, 100, 1000)
 
             if 'Gumbel' in keys:
                 y = fitting.get_max_values_gumbel(100 / x, params_dict['Gumbel'][0], params_dict['Gumbel'][1])
                 save_path = self.plot_result(fig, ax, max_tem_seq, x, y, '极端最高气温', 'Gumbel', ks_values['Gumbel_ks'])
-                result_dict.max_tem.img_save_path['Gumbel_plot'] = save_path
+                result_dict.img_save_path['Gumbel_plot_max'] = save_path
 
             if 'P3' in keys:
                 y = fitting.get_max_values_pearson3(100 / x, 0, params_dict['P3'][0], params_dict['P3'][1], params_dict['P3'][2])
                 save_path = self.plot_result(fig, ax, max_tem_seq, x, y, '极端最高气温', 'Pearson3', ks_values['P3_ks'])
-                result_dict.max_tem.img_save_path['P3_plot'] = save_path
+                result_dict.img_save_path['P3_plot_max'] = save_path
 
         if 'ex_tem_min' in self.element_name:
             min_tem_seq = self.df_sequence['TEM_Min'].resample('1A', closed='right', label='right').min()
@@ -226,13 +226,11 @@ class calc_return_period_tem:
             year_vals = min_tem_seq.dropna()
             if self.fitting_method is not None:
                 params_dict, max_values_dict, ks_values = self.calc_return_period_values(year_vals, 'ex_tem_min')
-                result_dict.min_tem.return_result = edict()
-                result_dict.min_tem.return_result['max_values'] = max_values_dict
-                result_dict.min_tem.return_result['distribution_params'] = params_dict
+                result_dict.main_return_result['max_values_min'] = max_values_dict
+                result_dict.main_return_result['distribution_params_min'] = params_dict
                 # result_dict.min_tem['p3_base'] = p3_base
 
             # 画图 - 改进的绘图逻辑
-            result_dict.min_tem.img_save_path = edict()
             keys = list(params_dict.keys())
             x = np.linspace(0.01, 100, 1000)
 
@@ -241,14 +239,14 @@ class calc_return_period_tem:
                 y_neg = fitting.get_max_values_gumbel(100/x, params_dict['Gumbel'][0], params_dict['Gumbel'][1])
                 y = -y_neg  # 转换回极小值
                 save_path = self.plot_result(fig, ax, min_tem_seq, x, y, '极端最低气温', 'Gumbel', ks_values['Gumbel_ks'])
-                result_dict.min_tem.img_save_path['Gumbel_plot'] = save_path
+                result_dict.img_save_path['Gumbel_plot_min'] = save_path
 
             if 'P3' in keys:
                 # 改进的P3极小值绘图
                 y_neg = fitting.get_max_values_pearson3(100/x, 0, params_dict['P3'][0], params_dict['P3'][1], params_dict['P3'][2])
                 y = -y_neg  # 转换回极小值
                 save_path = self.plot_result(fig, ax, min_tem_seq, x, y, '极端最低气温', 'Pearson3', ks_values['P3_ks'])
-                result_dict.min_tem.img_save_path['P3_plot'] = save_path
+                result_dict.img_save_path['P3_plot_min'] = save_path
 
         # 关闭图框
         plt.cla()

@@ -266,10 +266,10 @@ def workerReturnPeriod(data_json):
 
     # 最后结果
     all_results = convert_nested_df(all_results)
-    return_data = simplejson.dumps({'code': code, 'msg': msg, 'data': all_results}, ensure_ascii=False, ignore_nan=True)
-    callback(callback_url, result_id, return_data)
+    # return_data = simplejson.dumps({'code': code, 'msg': msg, 'data': all_results}, ensure_ascii=False, ignore_nan=True)
+    # callback(callback_url, result_id, return_data)
 
-    return return_data
+    return all_results
 
 
 if __name__=='__main__':
