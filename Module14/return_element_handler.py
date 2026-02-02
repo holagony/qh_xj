@@ -13,17 +13,19 @@ from Utils.data_processing import daily_data_processing
 from Utils.get_local_data import get_local_data
 from Module00.wrapped.check import check
 from Module04.module04_utils import get_station
-from Report.code.Module04.re_wind import re_wind_report,re_wind_report_pg
-from Report.code.Module04.re_snow import re_snow_report,re_snow_report_pg
-from Report.code.Module04.re_tem import re_tem_report,re_tem_report_pg
-from Report.code.Module04.re_frs import re_frs_report,re_frs_report_pg
+from Report.code.Module14.return_wind import returnWind_report
+from Report.code.Module14.return_snow import returnSnow_report
+from Report.code.Module14.return_tem import returnTem_report
+from Report.code.Module14.return_frs import returnFrs_report
+from Report.code.Module14.return_pre import returnPre_report
 from Utils.get_url_path import save_cmadaas_data
 from Module14.wrapped.return_period_wind import calc_return_period_wind
 from Module14.wrapped.return_period_pre import calc_return_period_pre
 from Module14.wrapped.return_period_snow import calc_return_period_snow
 from Module14.wrapped.return_period_tem import calc_return_period_tem
 from Module14.wrapped.return_period_frs import calc_return_period_frs
-
+from docx import Document
+from docxcompose.composer import Composer
 
 def convert_nested_df(data):
     if isinstance(data, dict):
@@ -117,20 +119,17 @@ def workerReturnPeriod(data_json):
     df_sequence = daily_df[daily_df['Station_Id_C'] == main_station]
     all_results = edict()
     all_results['uuid'] = uuid4
+    result_path = []
 
     for ele in elements:
         if ele == 'WIND':
             wind_s = calc_return_period_wind(df_sequence, return_years, fitting_method, data_dir, main_station)
             r = wind_s.run()
             try:
-                if len(fitting_method) == 2:
-                    report_path = re_wind_report(r, daily_df, data_dir)
-                    report_path = report_path.replace(cfg.INFO.IN_DATA_DIR, cfg.INFO.OUT_DATA_DIR)
-                    r['report'] = report_path.replace(cfg.INFO.OUT_DATA_DIR, cfg.INFO.OUT_DATA_URL)
-                else:
-                    report_path = re_wind_report_pg(r, daily_df, fitting_method[0], data_dir)
-                    report_path = report_path.replace(cfg.INFO.IN_DATA_DIR, cfg.INFO.OUT_DATA_DIR)
-                    r['report'] = report_path.replace(cfg.INFO.OUT_DATA_DIR, cfg.INFO.OUT_DATA_URL)
+                report_path = returnWind_report(years,sta_ids,daily_df,r,data_dir)
+                result_path.append(report_path)                
+                report_path = report_path.replace(cfg.INFO.IN_DATA_DIR, cfg.INFO.OUT_DATA_DIR)
+                r['report'] = report_path.replace(cfg.INFO.OUT_DATA_DIR, cfg.INFO.OUT_DATA_URL)
             except Exception as e:
                 r['report'] = None
 
@@ -147,14 +146,10 @@ def workerReturnPeriod(data_json):
             tem_s = calc_return_period_tem(df_sequence, return_years, fitting_method, data_dir)
             r = tem_s.run()
             try:
-                if len(fitting_method) == 2:
-                    report_path = re_tem_report(r, daily_df, data_dir)
-                    report_path = report_path.replace(cfg.INFO.IN_DATA_DIR, cfg.INFO.OUT_DATA_DIR)
-                    r['report'] = report_path.replace(cfg.INFO.OUT_DATA_DIR, cfg.INFO.OUT_DATA_URL)
-                else:
-                    report_path = re_tem_report_pg(r, daily_df, fitting_method[0], data_dir)
-                    report_path = report_path.replace(cfg.INFO.IN_DATA_DIR, cfg.INFO.OUT_DATA_DIR)
-                    r['report'] = report_path.replace(cfg.INFO.OUT_DATA_DIR, cfg.INFO.OUT_DATA_URL)
+                report_path = returnTem_report(years,sta_ids,daily_df,r,data_dir)
+                result_path.append(report_path)
+                report_path = report_path.replace(cfg.INFO.IN_DATA_DIR, cfg.INFO.OUT_DATA_DIR)
+                r['report'] = report_path.replace(cfg.INFO.OUT_DATA_DIR, cfg.INFO.OUT_DATA_URL)
             except Exception as e:
                 r['report'] = None
 
@@ -175,14 +170,10 @@ def workerReturnPeriod(data_json):
                                                 main_station=main_station)
             r = pre_calc.run()
             try:
-                if len(fitting_method) == 2:
-                    report_path = re_snow_report(r, daily_df, data_dir)
-                    report_path = report_path.replace(cfg.INFO.IN_DATA_DIR, cfg.INFO.OUT_DATA_DIR)
-                    r['report'] = report_path.replace(cfg.INFO.OUT_DATA_DIR, cfg.INFO.OUT_DATA_URL)
-                else:
-                    report_path = re_snow_report_pg(r, daily_df, fitting_method[0], data_dir)
-                    report_path = report_path.replace(cfg.INFO.IN_DATA_DIR, cfg.INFO.OUT_DATA_DIR)
-                    r['report'] = report_path.replace(cfg.INFO.OUT_DATA_DIR, cfg.INFO.OUT_DATA_URL)
+                report_path = returnPre_report(years,sta_ids,daily_df,r,data_dir)
+                result_path.append(report_path)
+                report_path = report_path.replace(cfg.INFO.IN_DATA_DIR, cfg.INFO.OUT_DATA_DIR)
+                r['report'] = report_path.replace(cfg.INFO.OUT_DATA_DIR, cfg.INFO.OUT_DATA_URL)
             except Exception as e:
                 r['report'] = None
 
@@ -203,14 +194,11 @@ def workerReturnPeriod(data_json):
                                                 main_station=main_station)
             r = snow_calc.run()
             try:
-                if len(fitting_method) == 2:
-                    report_path = re_snow_report(r, daily_df, data_dir)
-                    report_path = report_path.replace(cfg.INFO.IN_DATA_DIR, cfg.INFO.OUT_DATA_DIR)
-                    r['report'] = report_path.replace(cfg.INFO.OUT_DATA_DIR, cfg.INFO.OUT_DATA_URL)
-                else:
-                    report_path = re_snow_report_pg(r, daily_df, fitting_method[0], data_dir)
-                    report_path = report_path.replace(cfg.INFO.IN_DATA_DIR, cfg.INFO.OUT_DATA_DIR)
-                    r['report'] = report_path.replace(cfg.INFO.OUT_DATA_DIR, cfg.INFO.OUT_DATA_URL)
+
+                report_path = returnSnow_report(years,sta_ids,daily_df,r,data_dir)
+                result_path.append(report_path)
+                report_path = report_path.replace(cfg.INFO.IN_DATA_DIR, cfg.INFO.OUT_DATA_DIR)
+                r['report'] = report_path.replace(cfg.INFO.OUT_DATA_DIR, cfg.INFO.OUT_DATA_URL)
             except Exception as e:
                 r['report'] = None
 
@@ -231,14 +219,10 @@ def workerReturnPeriod(data_json):
                                                 main_station=main_station)
             r = frs_calc.run()
             try:
-                if len(fitting_method) == 2:
-                    report_path = re_frs_report(r, daily_df, data_dir)
-                    report_path = report_path.replace(cfg.INFO.IN_DATA_DIR, cfg.INFO.OUT_DATA_DIR)
-                    r['report'] = report_path.replace(cfg.INFO.OUT_DATA_DIR, cfg.INFO.OUT_DATA_URL)
-                else:
-                    report_path = re_frs_report_pg(r, daily_df, fitting_method[0], data_dir)
-                    report_path = report_path.replace(cfg.INFO.IN_DATA_DIR, cfg.INFO.OUT_DATA_DIR)
-                    r['report'] = report_path.replace(cfg.INFO.OUT_DATA_DIR, cfg.INFO.OUT_DATA_URL)
+                report_path = returnFrs_report(years,sta_ids,daily_df,r,data_dir)
+                result_path.append(report_path)
+                report_path = report_path.replace(cfg.INFO.IN_DATA_DIR, cfg.INFO.OUT_DATA_DIR)
+                r['report'] = report_path.replace(cfg.INFO.OUT_DATA_DIR, cfg.INFO.OUT_DATA_URL)
                     
             except Exception as e:
                 r['report'] = None
@@ -252,6 +236,24 @@ def workerReturnPeriod(data_json):
                     pass
             all_results['FRS'] = r
 
+    if len(result_path) == 0:
+        all_results['report'] = None
+    else:
+        try:
+            new_docx_path = os.path.join(data_dir, 'return_element.docx')
+            master = Document(result_path[0])
+            middle_new_docx = Composer(master)
+            for word in result_path[1:]:  # 从第二个文档开始追加
+                word_document = Document(word)
+                middle_new_docx.append(word_document)
+            middle_new_docx.save(new_docx_path)
+            new_docx_path = new_docx_path.replace(cfg.INFO.IN_DATA_DIR, cfg.INFO.OUT_DATA_DIR)
+            all_results['report'] = new_docx_path.replace(cfg.INFO.OUT_DATA_DIR, cfg.INFO.OUT_DATA_URL)
+
+        except Exception as e:
+            print(f"发生错误：{e}")
+            all_results['report'] = None
+            
     # 完整新分析
     years_split = years.split(',')
     all_results.check_result = edict()

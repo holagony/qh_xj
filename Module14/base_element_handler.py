@@ -147,8 +147,8 @@ def feature_stats_handler(data_json):
             result_dict['TEM'] = result
             try:
                 report_path=tem_report(years,sta_ids,sub_sta_ids,daily_df,result,data_dir)
-                report_path = report_path.replace(cfg.INFO.IN_DATA_DIR, cfg.INFO.OUT_DATA_DIR)
                 result_path.append(report_path)
+                report_path = report_path.replace(cfg.INFO.IN_DATA_DIR, cfg.INFO.OUT_DATA_DIR)
                 result_dict['TEM']['report'] = report_path.replace(cfg.INFO.OUT_DATA_DIR, cfg.INFO.OUT_DATA_URL)
             except:
                 result_dict['TEM']['report'] = None
@@ -158,8 +158,8 @@ def feature_stats_handler(data_json):
             result_dict['WIND'] = result
             try:
                 report_path=win_report(years,sta_ids,sub_sta_ids,daily_df,result,data_dir)
-                report_path = report_path.replace(cfg.INFO.IN_DATA_DIR, cfg.INFO.OUT_DATA_DIR)
                 result_path.append(report_path)
+                report_path = report_path.replace(cfg.INFO.IN_DATA_DIR, cfg.INFO.OUT_DATA_DIR)
                 result_dict['WIND']['report'] = report_path.replace(cfg.INFO.OUT_DATA_DIR, cfg.INFO.OUT_DATA_URL)
             except:
                 result_dict['WIND']['report'] = None
@@ -169,8 +169,8 @@ def feature_stats_handler(data_json):
             result_dict['PRE'] = result
             try:
                 report_path=pre_report(years,sta_ids,sub_sta_ids,daily_df,result,data_dir)
-                report_path = report_path.replace(cfg.INFO.IN_DATA_DIR, cfg.INFO.OUT_DATA_DIR)
                 result_path.append(report_path)
+                report_path = report_path.replace(cfg.INFO.IN_DATA_DIR, cfg.INFO.OUT_DATA_DIR)
                 result_dict['PRE']['report'] = report_path.replace(cfg.INFO.OUT_DATA_DIR, cfg.INFO.OUT_DATA_URL)
             except:
                 result_dict['PRE']['report'] = None
@@ -180,8 +180,8 @@ def feature_stats_handler(data_json):
             result_dict['SNOW'] = result
             try:
                 report_path=snow_report(years,sta_ids,sub_sta_ids,daily_df,result,data_dir)
-                report_path = report_path.replace(cfg.INFO.IN_DATA_DIR, cfg.INFO.OUT_DATA_DIR)
                 result_path.append(report_path)
+                report_path = report_path.replace(cfg.INFO.IN_DATA_DIR, cfg.INFO.OUT_DATA_DIR)
                 result_dict['SNOW']['report'] = report_path.replace(cfg.INFO.OUT_DATA_DIR, cfg.INFO.OUT_DATA_URL)
             except:
                 result_dict['SNOW']['report'] = None
@@ -191,8 +191,8 @@ def feature_stats_handler(data_json):
             result_dict['FRS'] = result
             try:
                 report_path=frs_report(years,sta_ids,sub_sta_ids,daily_df,result,data_dir)
-                report_path = report_path.replace(cfg.INFO.IN_DATA_DIR, cfg.INFO.OUT_DATA_DIR)
                 result_path.append(report_path)
+                report_path = report_path.replace(cfg.INFO.IN_DATA_DIR, cfg.INFO.OUT_DATA_DIR)
                 result_dict['FRS']['report'] = report_path.replace(cfg.INFO.OUT_DATA_DIR, cfg.INFO.OUT_DATA_URL)
             except:
                 result_dict['FRS']['report'] = None
