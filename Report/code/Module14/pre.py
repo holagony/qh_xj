@@ -230,13 +230,14 @@ def pre_report(years,sta_ids,sub_sta_ids,daily_df,wind_dict,data_dir):
     # 保存结果到新的docx文件
     report=os.path.join(data_dir,'PRE.docx')
     doc.save(report)
-    
-    ## 插入表格
-    document = Document(report)
-    
-    # 填充表格数据
-    creat_table(document,win_max_month_sub,f"参证站和专用站{dic['element_subtitle_1']}统计（单位：{dic['unit']}）")
+    if sub_sta_ids is not None:
+        
+        ## 插入表格
+        document = Document(report)
+        
+        # 填充表格数据
+        creat_table(document,win_max_month_sub,f"参证站和专用站{dic['element_subtitle_1']}统计（单位：{dic['unit']}）")
 
-    document.save(report)
+        document.save(report)
 
     return report

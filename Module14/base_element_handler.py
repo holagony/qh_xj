@@ -54,6 +54,7 @@ def feature_stats_handler(data_json):
         raise Exception('缺少或格式错误的 years，需形如 YYYY,YYYY')
     if sta_ids is None or (isinstance(sta_ids, str) and len(sta_ids.strip()) == 0):
         raise Exception('缺少 station_ids 或 station_id')
+    sub_sta_ids = None if sub_sta_ids == '' else sub_sta_ids
 
     # 2.参数处理
     if isinstance(elements, str):
@@ -227,8 +228,8 @@ if __name__=='__main__':
     
     data_json={
   "years": "1985,2009",
-  "station_ids": "52754",
-  "sub_sta_ids": "52863",
+  "station_ids": "52866",
+  "sub_sta_ids": "",
   "elements": ["TEM","WIND","PRE","FRS","SNOW"],
   "id": "uuid",
   "is_async": 0,
@@ -243,4 +244,4 @@ if __name__=='__main__':
 }
     
     
-    a=feature_stats_handler(data_json)
+    b=feature_stats_handler(data_json)
